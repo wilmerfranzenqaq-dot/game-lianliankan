@@ -49,4 +49,8 @@ public class Cell {
         isEmpty = empty;
         iconIndex = 0;
     }
+
+    public void setIconIndex(int iconIndex) {
+        this.iconIndex = iconIndex;
+    }
 }

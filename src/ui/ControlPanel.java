@@ -30,12 +30,19 @@ public class ControlPanel extends JPanel {
     JButton loadButton;
     JButton settingsButton;
     JButton leaderBoardBtn;
+    JButton hintButton;
+    JButton shuffleButton;
+    JButton bombButton;
+    JButton freezeTimeButton;
 
-    // ── 回调 ──
     Runnable onRestart;
     Runnable onLeaderBoard;
     Runnable onSave;
     Runnable onLoad;
+    Runnable onUseHint;
+    Runnable onUseShuffle;
+    Runnable onUseBomb;
+    Runnable onUseFreezeTime;
 
     // ── 设置参数（从 SettingsDialog 读回） ──
     int currentTimeLimit = 120;
@@ -61,6 +68,22 @@ public class ControlPanel extends JPanel {
         this.onLoad = callback;
     }
 
+    public void setOnUseHint(Runnable callback) {
+        this.onUseHint = callback;
+    }
+
+    public void setOnUseShuffle(Runnable callback) {
+        this.onUseShuffle = callback;
+    }
+
+    public void setOnUseBomb(Runnable callback) {
+        this.onUseBomb = callback;
+    }
+
+    public void setOnUseFreezeTime(Runnable callback) {
+        this.onUseFreezeTime = callback;
+    }
+
     // ════════════════════════════════════════════════════
     // 构造
     // ════════════════════════════════════════════════════
@@ -79,15 +102,14 @@ public class ControlPanel extends JPanel {
         this.statusPanel = statusPanel;
         this.boardPanel = boardPanel;
 
-        // ── 计算六个按钮的居中位置 ──
         int btnWidth = 110;
         int btnHeight = 40;
         int gap = 10;
+        
         int totalW = btnWidth * 6 + gap * 5;
         int x = (width - totalW) / 2;
-        int y = (height - btnHeight) / 2;
+        int y = (height - btnHeight * 2 - gap) / 2;
 
-        // ── START 按钮 ──
         startButton = createStyledButton("> START", new Color(0xe8c87a), new Color(0x4a3d2e));
         startButton.setBounds(x, y, btnWidth, btnHeight);
         add(startButton);
@@ -97,7 +119,6 @@ public class ControlPanel extends JPanel {
             boardPanel.refreshPairInfo();
         });
 
-        // ── RESTART 按钮 ──
         restartButton = createStyledButton("RESTART", new Color(0x6b5b45), new Color(0xc4b091));
         restartButton.setBounds(x + btnWidth + gap, y, btnWidth, btnHeight);
         add(restartButton);
@@ -105,7 +126,6 @@ public class ControlPanel extends JPanel {
             if (onRestart != null) onRestart.run();
         });
 
-        // ── SAVE 按钮 ──
         saveButton = createStyledButton("SAVE", new Color(0x4CAF50), new Color(0xffffff));
         saveButton.setBounds(x + 2 * (btnWidth + gap), y, btnWidth, btnHeight);
         add(saveButton);
@@ -115,7 +135,6 @@ public class ControlPanel extends JPanel {
             }
         });
 
-        // ── LOAD 按钮 ──
         loadButton = createStyledButton("LOAD", new Color(0x2196F3), new Color(0xffffff));
         loadButton.setBounds(x + 3 * (btnWidth + gap), y, btnWidth, btnHeight);
         add(loadButton);
@@ -125,7 +144,6 @@ public class ControlPanel extends JPanel {
             }
         });
 
-        // ── SETTINGS 按钮 ──
         settingsButton = createStyledButton("SETTINGS", new Color(0x5c4a3a), new Color(0xa09070));
         settingsButton.setBounds(x + 4 * (btnWidth + gap), y, btnWidth, btnHeight);
         add(settingsButton);
@@ -140,12 +158,46 @@ public class ControlPanel extends JPanel {
             }
         });
 
-        // ── RANK 按钮 ──
         leaderBoardBtn = createStyledButton("RANK", new Color(0x4a3d2e), new Color(0xe8c87a));
         leaderBoardBtn.setBounds(x + 5 * (btnWidth + gap), y, btnWidth, btnHeight);
         add(leaderBoardBtn);
         leaderBoardBtn.addActionListener(e -> {
             if (onLeaderBoard != null) onLeaderBoard.run();
+        });
+
+        int itemBtnWidth = 80;
+        int itemBtnHeight = 35;
+        int itemGap = 8;
+        int itemTotalW = itemBtnWidth * 4 + itemGap * 3;
+        int itemX = (width - itemTotalW) / 2;
+        int itemY = y + btnHeight + gap;
+
+        hintButton = createStyledButton("HINT", new Color(0xffeb3b), new Color(0x000000));
+        hintButton.setBounds(itemX, itemY, itemBtnWidth, itemBtnHeight);
+        add(hintButton);
+        hintButton.addActionListener(e -> {
+            if (onUseHint != null) onUseHint.run();
+        });
+
+        shuffleButton = createStyledButton("SHUFFLE", new Color(0x4caf50), new Color(0xffffff));
+        shuffleButton.setBounds(itemX + itemBtnWidth + itemGap, itemY, itemBtnWidth, itemBtnHeight);
+        add(shuffleButton);
+        shuffleButton.addActionListener(e -> {
+            if (onUseShuffle != null) onUseShuffle.run();
+        });
+
+        bombButton = createStyledButton("BOMB", new Color(0xf44336), new Color(0xffffff));
+        bombButton.setBounds(itemX + 2 * (itemBtnWidth + itemGap), itemY, itemBtnWidth, itemBtnHeight);
+        add(bombButton);
+        bombButton.addActionListener(e -> {
+            if (onUseBomb != null) onUseBomb.run();
+        });
+
+        freezeTimeButton = createStyledButton("FREEZE", new Color(0x2196f3), new Color(0xffffff));
+        freezeTimeButton.setBounds(itemX + 3 * (itemBtnWidth + itemGap), itemY, itemBtnWidth, itemBtnHeight);
+        add(freezeTimeButton);
+        freezeTimeButton.addActionListener(e -> {
+            if (onUseFreezeTime != null) onUseFreezeTime.run();
         });
     }
 

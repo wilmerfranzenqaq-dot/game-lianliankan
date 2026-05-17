@@ -39,20 +39,19 @@ public class GamePanel extends JPanel {
 
         setLayout(null);
         setBackground(new Color(0x6b5b45));
+        setPreferredSize(new Dimension(1000, 1000));
+        setBounds(0, 0, 1000, 1000);
 
-        // ── 生成棋盘 ──
         ChessGenerator gen = new ChessGenerator();
         Cell[][] board = isHardMode ? gen.generateHardBoard() : gen.generateEasyBoard();
         int totalRow = board.length;
         int totalCol = board[0].length;
 
-        // ── 创建子面板（左侧 800px 宽） ──
         statusPanel = new StatusPanel(0, 0, 800, 100);
         boardPanel = new BoardPanel(new GameBoard(totalRow, totalCol, board), statusPanel,
-                0, 100, 800, 800);
-        controlPanel = new ControlPanel(statusPanel, boardPanel, 0, 900, 800, 100);
+                0, 100, 800, 750);
+        controlPanel = new ControlPanel(statusPanel, boardPanel, 0, 850, 800, 150);
 
-        // ── 右侧猫面板（200px 宽） ──
         catPanel = new CatPanel();
         catPanel.setBounds(800, 0, 200, 1000);
 
@@ -103,6 +102,22 @@ public class GamePanel extends JPanel {
             JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(controlPanel);
             SaveLoadDialog dialog = new SaveLoadDialog(frame, GamePanel.this, username, currentMode);
             dialog.setVisible(true);
+        });
+
+        controlPanel.setOnUseHint(() -> {
+            boardPanel.useHint();
+        });
+
+        controlPanel.setOnUseShuffle(() -> {
+            boardPanel.useShuffle();
+        });
+
+        controlPanel.setOnUseBomb(() -> {
+            boardPanel.useBomb();
+        });
+
+        controlPanel.setOnUseFreezeTime(() -> {
+            boardPanel.useFreezeTime();
         });
     }
 
