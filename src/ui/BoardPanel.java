@@ -12,6 +12,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -76,7 +77,7 @@ public class BoardPanel extends JPanel {
         this.offSetY = offSetY;
 
         setBounds(offSetX, offSetY, width, height);
-        setBackground(new Color(0x6b5b45));
+        setBackground(new Color(0x7a6a52));  // 比 canvas 稍亮，作为棋盘表面
         setOpaque(true);
 
         this.totalRow = gameBoard.getRowCnt();
@@ -87,8 +88,11 @@ public class BoardPanel extends JPanel {
         this.itemManager = new ItemManager(gameBoard);
 
         setPreferredSize(new Dimension(this.width, this.height));
+        // 格子尺寸按面板大小计算，整数除法余数自然居中
         this.cellWidth = this.width / totalCol;
         this.cellHeight = this.height / totalRow;
+        this.offSetX = (this.width - this.cellWidth * totalCol) / 2;
+        this.offSetY = (this.height - this.cellHeight * totalRow) / 2;
 
         // ── 加载棋子图片资源 ──
         File dir = new File("resource");
@@ -97,6 +101,13 @@ public class BoardPanel extends JPanel {
         }
         File[] files = dir.listFiles();
         if (files != null) {
+            // 按文件名中的数字升序排序（0.png < 2.png < 10.png）
+            // 非数字文件（background.png）排在最后
+            Arrays.sort(files, (a, b) -> {
+                int na = parseNumericPrefix(a.getName());
+                int nb = parseNumericPrefix(b.getName());
+                return Integer.compare(na, nb);
+            });
             for (File file : files) {
                 if (file.getName().endsWith(".png")) {
                     ImageIcon icon = new ImageIcon(file.getPath());
@@ -309,8 +320,8 @@ public class BoardPanel extends JPanel {
      * 像素坐标 → 棋盘行列坐标（超出边界返回 null）
      */
     public Position getPositionByPoint(int x, int y) {
-        int col = x / cellWidth;
-        int row = y / cellHeight;
+        int col = (x - offSetX) / cellWidth;
+        int row = (y - offSetY) / cellHeight;
         if (row < 0 || row >= totalRow || col < 0 || col >= totalCol) {
             return null;
         }
@@ -321,8 +332,8 @@ public class BoardPanel extends JPanel {
      * 获取某个棋盘格子在屏幕上的像素矩形
      */
     public Rectangle getRectangle(Position position) {
-        int x = position.getCol() * cellWidth;
-        int y = position.getRow() * cellHeight;
+        int x = offSetX + position.getCol() * cellWidth;
+        int y = offSetY + position.getRow() * cellHeight;
         return new Rectangle(x, y, cellWidth, cellHeight);
     }
 
@@ -435,7 +446,8 @@ public class BoardPanel extends JPanel {
                     if (onWinCallback != null) {
                         onWinCallback.run();
                     }
-                    JOptionPane.showMessageDialog(BoardPanel.this, "你赢了！");
+                    JFrame p = (JFrame) SwingUtilities.getWindowAncestor(BoardPanel.this);
+                    GameResultDialog.showWin(p, statusPanel.getScore());
                 }
 
                 // 恢复状态
@@ -471,12 +483,24 @@ public class BoardPanel extends JPanel {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
 
+        // ── 棋盘内凹边框（inset bevel） ──
+        { // 作用域块，避免变量泄漏
+            int w = getWidth(), h = getHeight();
+            g2.setColor(new Color(0x8a7a62));  // 浅（上 + 左）
+            g2.drawLine(0, 0, w - 1, 0);         // 上——全宽
+            g2.drawLine(0, 1, 0, h - 1);         // 左——跳过(0,0)已被上画
+            g2.setColor(new Color(0x5a4a35));  // 深（下 + 右）
+            g2.drawLine(0, h - 1, w - 1, h - 1);  // 下——全宽
+            g2.drawLine(w - 1, 1, w - 1, h - 1);  // 右——跳过(w-1,0)已被上画
+        }
+
         // ── 绘制棋盘格子 ──
         for (int i = 0; i < gameBoard.getRowCnt(); i++) {
             for (int j = 0; j < gameBoard.getColCnt(); j++) {
                 Rectangle rec = getRectangle(new Position(i, j));
                 int iconIdx = gameBoard.getCell(i, j).getIconIndex();
-                if (iconIdx >= 0 && iconIdx < scaledImages.length) {
+                // iconIdx > 0：跳过 border（0.png），真正的棋子从 1.png 开始
+                if (iconIdx > 0 && iconIdx < scaledImages.length) {
                     g2.drawImage(scaledImages[iconIdx],
                             rec.getX(), rec.getY(), rec.getWidth(), rec.getHeight(),
                             this
@@ -561,5 +585,23 @@ public class BoardPanel extends JPanel {
         updateItemDisplay();
 
         repaint();
+    }
+
+    /** 从文件名提取开头的数字（0.png→0, background.png→Integer.MAX_VALUE） */
+    private static int parseNumericPrefix(String name) {
+        StringBuilder digits = new StringBuilder();
+        for (char c : name.toCharArray()) {
+            if (Character.isDigit(c)) {
+                digits.append(c);
+            } else if (digits.length() > 0) {
+                break;  // 数字结束后停止
+            }
+        }
+        if (digits.length() == 0) return Integer.MAX_VALUE;  // 非数字文件排最后
+        try {
+            return Integer.parseInt(digits.toString());
+        } catch (NumberFormatException e) {
+            return Integer.MAX_VALUE;
+        }
     }
 }

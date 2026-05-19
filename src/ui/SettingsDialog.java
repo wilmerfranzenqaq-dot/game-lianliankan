@@ -1,24 +1,17 @@
 package ui;
 
+import utils.MusicManager;
+
 import javax.swing.*;
 import java.awt.*;
 
 /**
- * 游戏设置对话框 — 模态窗口，包含时间/难度/音效选项
+ * 游戏设置对话框 — 模态窗口
  *
  * 选项：
- *   - 时间限制：60s / 90s / 120s / 180s / 无限制（JComboBox）
- *   - 难度：3~6 的核心大小（JSlider）
- *   - 音效开关：占位（待实现）
- *
- * 用法：
- *   SettingsDialog dlg = new SettingsDialog(parent, currentTime, currentCoreSize);
- *   dlg.setVisible(true);                         // 阻塞直到关闭
- *   if (dlg.isRestartRequested()) {
- *       int time = dlg.getSelectedTimeSeconds();
- *       int core = dlg.getSelectedCoreSize();
- *       // 应用…
- *   }
+ *   - 时间限制：60s / 90s / 120s / 180s / 无限制
+ *   - 模式：简单模式 / 困难模式
+ *   - 音乐音量：0~100 滑条
  */
 public class SettingsDialog extends JDialog {
 
@@ -27,15 +20,15 @@ public class SettingsDialog extends JDialog {
 
     // ── UI 组件 ──
     private final JComboBox<String> timeLimitCombo;
-    private final JSlider difficultySlider;
-    private final JCheckBox soundCheckbox;
+    private final JComboBox<String> modeCombo;
+    private final JSlider volumeSlider;
 
     /** 用户是否点击了「重新开始」按钮 */
     private boolean restartRequested = false;
 
-    public SettingsDialog(JFrame parent, int currentTime, int currentCoreSize) {
-        super(parent, "Settings", true);
-        setSize(420, 420);
+    public SettingsDialog(JFrame parent, int currentTime, boolean currentHardMode, int currentVolume) {
+        super(parent, "设置", true);
+        setSize(420, 380);
         setLocationRelativeTo(parent);
         setResizable(false);
         setLayout(new BorderLayout());
@@ -44,7 +37,7 @@ public class SettingsDialog extends JDialog {
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(6, 8, 6, 8);
+        gbc.insets = new Insets(8, 8, 8, 8);
         gbc.weightx = 1;
 
         Font labelFont = new Font("Microsoft YaHei", Font.BOLD, 15);
@@ -75,50 +68,45 @@ public class SettingsDialog extends JDialog {
         gbc.gridx = 1;
         mainPanel.add(timeLimitCombo, gbc);
 
-        // ── 2. 难度（棋盘核心大小 3~6） ──
+        // ── 2. 模式选择（简单 / 困难） ──
         gbc.gridx = 0;
         gbc.gridy = 1;
-        JLabel diffLabel = new JLabel("🎯 难度");
-        diffLabel.setFont(labelFont);
-        mainPanel.add(diffLabel, gbc);
+        JLabel modeLabel = new JLabel("🎯 模式");
+        modeLabel.setFont(labelFont);
+        mainPanel.add(modeLabel, gbc);
 
-        JPanel diffPanel = new JPanel(new BorderLayout());
-        difficultySlider = new JSlider(JSlider.HORIZONTAL, 3, 6, currentCoreSize);
-        difficultySlider.setMajorTickSpacing(1);
-        difficultySlider.setPaintTicks(true);
-        difficultySlider.setPaintLabels(true);
-        difficultySlider.setSnapToTicks(true);
-        difficultySlider.setFont(valueFont);
-        diffPanel.add(difficultySlider, BorderLayout.CENTER);
-
-        JLabel diffHint = new JLabel("越小越简单 · 越大越难（重启后生效）", SwingConstants.CENTER);
-        diffHint.setFont(new Font("Microsoft YaHei", Font.PLAIN, 11));
-        diffHint.setForeground(Color.GRAY);
-        diffPanel.add(diffHint, BorderLayout.SOUTH);
-
+        modeCombo = new JComboBox<>(new String[]{"简单模式", "困难模式"});
+        modeCombo.setFont(valueFont);
+        modeCombo.setSelectedIndex(currentHardMode ? 1 : 0);
         gbc.gridx = 1;
-        mainPanel.add(diffPanel, gbc);
+        mainPanel.add(modeCombo, gbc);
 
-        // ── 3. 音效开关（占位） ──
+        // ── 3. 音乐音量 ──
         gbc.gridx = 0;
         gbc.gridy = 2;
-        JLabel soundLabel = new JLabel("🔊 音效");
-        soundLabel.setFont(labelFont);
-        mainPanel.add(soundLabel, gbc);
+        JLabel volLabel = new JLabel("🔊 音乐音量");
+        volLabel.setFont(labelFont);
+        mainPanel.add(volLabel, gbc);
 
-        soundCheckbox = new JCheckBox("开启音效");
-        soundCheckbox.setFont(valueFont);
-        soundCheckbox.setSelected(true);
-        soundCheckbox.setEnabled(false); // 待实现
+        JPanel volPanel = new JPanel(new BorderLayout(8, 0));
+        volumeSlider = new JSlider(JSlider.HORIZONTAL, 0, 100, currentVolume);
+        volumeSlider.setMajorTickSpacing(25);
+        volumeSlider.setPaintTicks(true);
+        volumeSlider.setPaintLabels(true);
+        volumeSlider.setFont(valueFont);
+        volumeSlider.addChangeListener(e -> {
+            MusicManager.setVolume(volumeSlider.getValue() / 100f);
+        });
+        volPanel.add(volumeSlider, BorderLayout.CENTER);
         gbc.gridx = 1;
-        mainPanel.add(soundCheckbox, gbc);
+        mainPanel.add(volPanel, gbc);
 
         // ── 4. 重新开始按钮 ──
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.gridwidth = 2;
-        gbc.insets = new Insets(14, 8, 4, 8);
-        JButton restartBtn = new JButton("🔄 重新开始");
+        gbc.insets = new Insets(16, 8, 4, 8);
+        JButton restartBtn = new JButton("🔄 应用并重新开始");
         restartBtn.setFont(new Font("Microsoft YaHei", Font.BOLD, 16));
         restartBtn.setBackground(new Color(70, 130, 180));
         restartBtn.setForeground(Color.WHITE);
@@ -135,8 +123,7 @@ public class SettingsDialog extends JDialog {
         gbc.gridwidth = 2;
         gbc.insets = new Insets(8, 8, 4, 8);
         JLabel versionLabel = new JLabel(
-                "<html><center>🀄 连连看 v1.0<br>"
-                        + "Built with Java Swing</center></html>",
+                "<html><center>🀄 连连看 v1.0<br>Built with Java Swing</center></html>",
                 SwingConstants.CENTER
         );
         versionLabel.setFont(new Font("Microsoft YaHei", Font.PLAIN, 13));
@@ -163,15 +150,20 @@ public class SettingsDialog extends JDialog {
         return restartRequested;
     }
 
-    /** 从下拉框读取当前选择的时间限制秒数（-1 = 无限制） */
+    /** 读取时间限制秒数（-1 = 无限制） */
     public int getSelectedTimeSeconds() {
         int idx = timeLimitCombo.getSelectedIndex();
         if (idx < 0 || idx >= TIME_OPTIONS.length) idx = 2;
         return TIME_OPTIONS[idx];
     }
 
-    /** 从滑块读取当前选择的难度（3~6） */
-    public int getSelectedCoreSize() {
-        return difficultySlider.getValue();
+    /** 读取模式：true = 困难模式 */
+    public boolean isHardMode() {
+        return modeCombo.getSelectedIndex() == 1;
+    }
+
+    /** 读取音量（0~100） */
+    public int getMusicVolume() {
+        return volumeSlider.getValue();
     }
 }

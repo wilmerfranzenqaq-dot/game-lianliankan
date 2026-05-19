@@ -29,14 +29,14 @@ public class EffectManager {
     }
 
     public void createShatterEffect(Position pos1, Position pos2, int cellWidth, int cellHeight, int iconIndex) {
-        // 计算两个棋子中心的像素坐标中点
+        // 计算两个棋子中心的像素坐标中点（相对于 BoardPanel）
         int x1 = pos1.getCol() * cellWidth + cellWidth / 2;
         int y1 = pos1.getRow() * cellHeight + cellHeight / 2;
         int x2 = pos2.getCol() * cellWidth + cellWidth / 2;
         int y2 = pos2.getRow() * cellHeight + cellHeight / 2;
         
-        int centerX = (x1 + x2) / 2 + 200;
-        int centerY = (y1 + y2) / 2 + 150;
+        int centerX = (x1 + x2) / 2;
+        int centerY = (y1 + y2) / 2;
         
         Color color = getColorByIconIndex(iconIndex);
 

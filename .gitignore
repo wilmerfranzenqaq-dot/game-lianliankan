@@ -10,3 +10,6 @@ out/
 # 其他
 *.log
 .DS_Store
+
+# 存档文件
+*.dat

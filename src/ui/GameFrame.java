@@ -20,9 +20,8 @@ public class GameFrame extends JFrame {
     private boolean gameAdded = false;
     private LeaderBoard leaderBoard;
 
-    public GameFrame(String title, int width, int height) {
+    public GameFrame(String title, int contentW, int contentH) {
         super(title);
-        setSize(width, height);
         setResizable(false);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -32,8 +31,6 @@ public class GameFrame extends JFrame {
                 MusicManager.stop();
             }
         });
-
-        setLocationRelativeTo(null);
 
         // 初始化排行榜数据层（全局共享）
         leaderBoard = new LeaderBoard();
@@ -46,6 +43,14 @@ public class GameFrame extends JFrame {
 
         showPage("splash");
         setVisible(true);
+
+        // 窗口显示后，补偿标题栏+边框，确保内容区恰为 contentW × contentH
+        SwingUtilities.invokeLater(() -> {
+            Insets insets = getInsets();
+            setSize(contentW + insets.left + insets.right,
+                    contentH + insets.top + insets.bottom);
+            setLocationRelativeTo(null);
+        });
     }
 
     /**

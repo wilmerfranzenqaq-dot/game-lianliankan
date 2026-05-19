@@ -1,7 +1,9 @@
 package ui;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import java.awt.*;
+import utils.MusicManager;
 
 /**
  * 游戏状态面板 — HUD 显示得分、倒计时、连击、配对进度
@@ -66,6 +68,8 @@ public class StatusPanel extends JPanel {
         setBounds(offSetX, offSetY, width, height);
         setBackground(new Color(0x5c4a3a));
         setOpaque(true);
+        // 底部 hairline border 与 BoardPanel 分隔
+        setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(0x7a6a52)));
 
         // ── 字体 ──
         Font cjkFont = new Font("Microsoft YaHei", Font.PLAIN, 13);
@@ -153,6 +157,14 @@ public class StatusPanel extends JPanel {
             }
             seconds = totalSeconds % 60;
             minutes = totalSeconds / 60;
+            secondsUsed = countSeconds % 60;
+            minutesUsed = countSeconds / 60;
+
+            if (totalSeconds == 0) {
+                timer.stop();
+                JFrame p = (JFrame) SwingUtilities.getWindowAncestor(StatusPanel.this);
+                GameResultDialog.showLose(p);
+            }
             timeLabel.setText(String.format("%02d:%02d", minutes, seconds));
         });
 

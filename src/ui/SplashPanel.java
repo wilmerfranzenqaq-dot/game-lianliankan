@@ -34,6 +34,7 @@ public class SplashPanel extends JPanel implements ActionListener {
     private int jumpTimer;         // 跳跃帧计数
     private float titleAlpha;      // 标题透明度（淡入）
     private float pulse;           // 点击提示呼吸
+    private float rodPhase;        // 鱼竿摆动相位偏移
 
     public SplashPanel(GameFrame parent) {
         this.parent = parent;
@@ -115,22 +116,25 @@ public class SplashPanel extends JPanel implements ActionListener {
             g2.drawLine(x, yy, x + 2, yy);
         }
 
-        // 3. 鱼竿 + 鱼线 + 浮标
+        // 3. 鱼竿 + 鱼线 + 浮标（鱼竿整体上下摆动）
         int dockX = w / 2 + 40;
-        int bobberY = waterY - 20 + (int) (Math.sin(bobAngle) * 8);
+        int rodTipX = dockX - 60;
+        int rodTipY = 30 + (int) (Math.sin(bobAngle + rodPhase) * 8);
+        int rodBaseY = 70;
         int bobberX = dockX;
+        int bobberY = waterY - 20 + (int) (Math.sin(bobAngle) * 8);
 
-        // 鱼竿杆身
+        // 鱼竿杆身（从固定底座到摆动的竿梢）
         g2.setStroke(new BasicStroke(3f));
         g2.setColor(new Color(0x8D6E63));
-        g2.drawLine(dockX, 70, dockX - 60, 30);
+        g2.drawLine(dockX, rodBaseY, rodTipX, rodTipY);
 
-        // 鱼线
+        // 鱼线（从摆动的竿梢到浮标）
         g2.setStroke(new BasicStroke(1f));
         g2.setColor(new Color(188, 170, 164, 180));
-        g2.drawLine(dockX - 60, 30, bobberX, bobberY);
+        g2.drawLine(rodTipX, rodTipY, bobberX, bobberY);
 
-        // 浮标
+        // 浮标（独立上下浮动）
         g2.setColor(new Color(0xE53935));
         g2.fillOval(bobberX - 6, bobberY - 6, 12, 12);
         g2.setColor(Color.WHITE);
@@ -190,7 +194,9 @@ public class SplashPanel extends JPanel implements ActionListener {
         // 标题下划线
         g2.setColor(new Color(122, 106, 85, 150));
         g2.fillRect(w / 2 - 60, 148, 120, 2);
-        // 副标题
+        // 副标题（闪烁呼吸）
+        float subAlpha = Math.min(1f, (float) (0.4 + 0.6 * Math.abs(Math.sin(System.currentTimeMillis() * 0.004))));
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, ta * subAlpha));
         g2.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         g2.setColor(new Color(0xc4b091));
         g2.drawString("~ Fish ~ Feed ~ Grow ~", w / 2 - 80, 175);

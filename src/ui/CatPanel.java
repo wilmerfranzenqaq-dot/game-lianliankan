@@ -2,6 +2,7 @@ package ui;
 
 import javax.swing.*;
 import java.awt.*;
+import javax.swing.border.Border;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -219,6 +220,8 @@ public class CatPanel extends JPanel implements ActionListener {
     public CatPanel() {
         setBackground(new Color(0x4a3d2e));
         setOpaque(true);
+        // 左侧 hairline border 与 BoardPanel 分隔
+        setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, new Color(0x6a5a42)));
         lastFrameTime = System.currentTimeMillis();
         timer = new Timer(80, this);   // ~80ms tick（动画更新 + 飞鱼更新）
         timer.start();

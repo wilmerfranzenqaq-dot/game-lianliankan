@@ -29,6 +29,10 @@ public class GamePanel extends JPanel {
     private ControlPanel controlPanel;
     private CatPanel catPanel;
     private boolean isHardMode;
+
+    public void setDifficultyMode(boolean hard) {
+        this.isHardMode = hard;
+    }
     private String username;
     private String currentMode;
     private boolean isGuestMode;
@@ -54,8 +58,10 @@ public class GamePanel extends JPanel {
                 0, 100, 800, 750);
         controlPanel = new ControlPanel(statusPanel, boardPanel, 0, 850, 800, 150);
 
+        int gap = 12;
+        int leftW = 764;
         catPanel = new CatPanel();
-        catPanel.setBounds(800, 0, 200, 1000);
+        catPanel.setBounds(gap + leftW + gap, gap, 200, 1000 - 2 * gap);
 
         add(statusPanel);
         add(boardPanel);
@@ -77,6 +83,9 @@ public class GamePanel extends JPanel {
 
         // 消除棋子 → 喂猫
         boardPanel.setOnFishFeed(() -> catPanel.feedFish());
+
+        // 模式变更回调（Settings 中切换模式时先更新 isHardMode）
+        controlPanel.setOnModeChange((hard) -> setDifficultyMode(hard));
 
         // 排行榜按钮
         controlPanel.setOnLeaderBoard(() -> {

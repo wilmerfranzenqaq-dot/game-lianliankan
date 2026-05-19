@@ -5,40 +5,26 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * 背景音乐管理器 — 支持三首曲目的循环播放与无缝切换
+ * 音乐+音效管理器 — BGM 循环播放 + SFX 一次性播放（叠加在 BGM 上）
  *
- * 原理：切换时先停止当前曲目循环，等当前这一次播完后自动加载并播放下一首，
- * 避免生硬截断。如果当前没有曲目在播，则直接加载新曲目。
- *
- * 用法:
- *   MusicManager.play("splash")   // 循环播放 splash.wav
- *   MusicManager.play("login")    // 等当前播完后切到 login.wav
- *   MusicManager.stop()           // 立即停止
+ * SFX 变调：修改 AudioFormat 的采样率，音调随采样率升高而变高。
+ *   1.0x = 正常, >1.0x = 更高更快, <1.0x = 更低更慢
  */
 public class MusicManager {
 
-    /** 音乐资源目录（相对于项目根目录） */
     public static final String DIR = "resource" + File.separator + "music" + File.separator;
-    /** 备用音乐目录（硬编码绝对路径，应对工作目录不一致的情况） */
     public static final String FALLBACK_DIR = "D:" + File.separator + "game-lianliankan"
             + File.separator + "resource" + File.separator + "music" + File.separator;
 
-    /** 当前正在播放的音频剪辑 */
     private static Clip currentClip;
-    /** 等待当前曲目结束后切换到的目标曲目名 */
     private static String pendingTrack;
-    /** 是否正在切换过程中 */
     private static boolean switching;
+    private static float volume = 0.5f;
 
-    // ── 公开接口 ──
+    // ── BGM ──
 
-    /**
-     * 播放指定名称的 WAV 曲目（或排队等待当前曲目结束）
-     * @param name 曲目标识（如 "splash", "login", "game"），对应 resource/music/{name}.wav
-     */
     public static void play(String name) {
         if (currentClip != null && currentClip.isRunning()) {
-            // 当前有曲目在播 → 标记切换，停止循环让当前这次播完
             pendingTrack = name;
             switching = true;
             currentClip.loop(0);
@@ -47,7 +33,6 @@ public class MusicManager {
         }
     }
 
-    /** 立即停止播放并重置切换状态 */
     public static void stop() {
         pendingTrack = null;
         switching = false;
@@ -58,48 +43,84 @@ public class MusicManager {
         }
     }
 
-    // ── 内部实现 ──
+    // ── SFX ──
 
-    /**
-     * 加载指定曲目并开始循环播放
-     * 先尝试项目相对路径，再尝试备用绝对路径
-     */
+    /** 播放一次性音效（与 BGM 叠加） */
+    public static void playSfx(String name) {
+        playSfx(name, 1.0f);
+    }
+
+    /** 播放带变调的一次性音效 */
+    public static void playSfx(String name, float pitchFactor) {
+        try {
+            File file = new File(DIR + name + ".wav");
+            if (!file.exists()) file = new File(FALLBACK_DIR + name + ".wav");
+            if (!file.exists()) return;
+
+            AudioInputStream stream = AudioSystem.getAudioInputStream(file);
+
+            // 变调：修改采样率
+            if (Math.abs(pitchFactor - 1.0f) > 0.01f) {
+                AudioFormat base = stream.getFormat();
+                AudioFormat pitched = new AudioFormat(
+                        base.getEncoding(),
+                        base.getSampleRate() * pitchFactor,
+                        base.getSampleSizeInBits(),
+                        base.getChannels(),
+                        base.getFrameSize(),
+                        base.getFrameRate() * pitchFactor,
+                        base.isBigEndian()
+                );
+                stream = AudioSystem.getAudioInputStream(pitched, stream);
+            }
+
+            Clip clip = AudioSystem.getClip();
+            clip.open(stream);
+            applySfxVolume(clip);
+            clip.start();
+            clip.addLineListener(e -> { if (e.getType() == LineEvent.Type.STOP) clip.close(); });
+        } catch (Exception e) {
+            System.err.println("sfx error: " + e.getMessage());
+        }
+    }
+
+    // ── 音量 ──
+
+    public static void setVolume(float vol) {
+        volume = Math.max(0f, Math.min(1f, vol));
+        applyVolume();
+    }
+
+    public static float getVolume() {
+        return volume;
+    }
+
+    // ── 内部 ──
+
     private static void loadAndPlay(String name) {
         try {
-            if (currentClip != null) {
-                currentClip.close();
-                currentClip = null;
-            }
+            if (currentClip != null) { currentClip.close(); currentClip = null; }
 
             File file = new File(DIR + name + ".wav");
-            if (!file.exists()) {
-                file = new File(FALLBACK_DIR + name + ".wav");
-            }
-            if (!file.exists()) {
-                System.err.println("音乐文件不存在: " + file.getAbsolutePath());
-                return;
-            }
+            if (!file.exists()) file = new File(FALLBACK_DIR + name + ".wav");
+            if (!file.exists()) { System.err.println("音乐文件不存在: " + file); return; }
 
             AudioInputStream stream = AudioSystem.getAudioInputStream(file);
             currentClip = AudioSystem.getClip();
 
-            // 监听播放结束事件，实现无缝切换
             currentClip.addLineListener(event -> {
                 if (event.getType() == LineEvent.Type.STOP) {
                     if (switching && pendingTrack != null) {
-                        // 当前曲目播完 → 切换到排队的曲目
-                        String next = pendingTrack;
-                        pendingTrack = null;
-                        switching = false;
+                        String next = pendingTrack; pendingTrack = null; switching = false;
                         loadAndPlay(next);
                     } else if (!switching) {
-                        // 正常循环播放
                         currentClip.loop(Clip.LOOP_CONTINUOUSLY);
                     }
                 }
             });
 
             currentClip.open(stream);
+            applyVolume();
             currentClip.loop(Clip.LOOP_CONTINUOUSLY);
             switching = false;
 
@@ -107,5 +128,30 @@ public class MusicManager {
             System.err.println("播放音乐失败: " + name);
             e.printStackTrace();
         }
+    }
+
+    private static void applyVolume() {
+        if (currentClip == null || !currentClip.isOpen()) return;
+        try {
+            if (currentClip.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
+                FloatControl gain = (FloatControl) currentClip.getControl(FloatControl.Type.MASTER_GAIN);
+                float dB = volume <= 0f ? gain.getMinimum()
+                        : gain.getMinimum() + (gain.getMaximum() - gain.getMinimum()) * (float) Math.log10(1 + 9 * volume);
+                gain.setValue(Math.max(gain.getMinimum(), Math.min(gain.getMaximum(), dB)));
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private static void applySfxVolume(Clip clip) {
+        if (clip == null || !clip.isOpen()) return;
+        try {
+            if (clip.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
+                FloatControl gain = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+                float sfxVol = Math.min(1f, volume * 1.2f);
+                float dB = sfxVol <= 0f ? gain.getMinimum()
+                        : gain.getMinimum() + (gain.getMaximum() - gain.getMinimum()) * (float) Math.log10(1 + 9 * sfxVol);
+                gain.setValue(Math.max(gain.getMinimum(), Math.min(gain.getMaximum(), dB)));
+            }
+        } catch (Exception ignored) {}
     }
 }
