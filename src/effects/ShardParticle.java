@@ -19,13 +19,18 @@ public class ShardParticle extends Particle{
 
     @Override
     public void draw(Graphics2D g){
-        if(life <= 0) return;
-        AffineTransform old = g.getTransform();
-        AffineTransform transform = new AffineTransform(old);
-        transform.translate(x, y);
-        transform.rotate(rotation, size / 2, size / 2);
-        g.setTransform(transform);
-        g.setColor(new Color(
+        if(life <=  0) return;
+        
+        // 使用 create() 创建局部拷贝，避免影响全局坐标系
+        Graphics2D g2d = (Graphics2D) g.create();
+        
+        AffineTransform transform = new AffineTransform();
+        transform.translate(x + size / 2, y + size / 2);
+        transform.rotate(rotation);
+        transform.translate(-size / 2, -size / 2);
+        g2d.setTransform(transform);
+        
+        g2d.setColor(new Color(
                 color.getRed(),
                 color.getGreen(),
                 color.getBlue(),
@@ -33,8 +38,10 @@ public class ShardParticle extends Particle{
         ));
         int[] xPoints = {0, (int) size, (int)(size / 2)};
         int[] yPoints = {0, 0, (int)size};
-        g.fillPolygon(xPoints, yPoints, 3);
-        g.setTransform(old);
+        g2d.fillPolygon(xPoints, yPoints, 3);
+        
+        // 销毁局部拷贝，恢复原始坐标系
+        g2d.dispose();
     }
 
 }

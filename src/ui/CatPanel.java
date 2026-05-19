@@ -187,8 +187,8 @@ public class CatPanel extends JPanel implements ActionListener {
     private static final String[] STAGE_NAMES = {"小奶猫", "大橘", "胖橘"};
     private static final int[] FISH_NEED = {0, 5, 15};        // 每个阶段需要的鱼数
     private static final int[][][][] STAGE_DATA = {KT, AD, CH};
-    private static final int[] STAGE_COLS = {16, 20, 28};
-    private static final int[] STAGE_ROWS = {16, 20, 24};
+    private static final int[] STAGE_COLS = {16, 20, 27};
+    private static final int[] STAGE_ROWS = {16, 21, 25};
 
     // ════════════════════════════════════════════════════
     // 渲染常量

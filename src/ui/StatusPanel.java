@@ -1,9 +1,7 @@
 package ui;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import java.awt.*;
-import utils.MusicManager;
 
 /**
  * 游戏状态面板 — HUD 显示得分、倒计时、连击、配对进度
@@ -34,10 +32,20 @@ public class StatusPanel extends JPanel {
     JLabel comboLabel;
     JLabel remainingPairLabel;
     JLabel progressLabel;
+    JLabel hintCountLabel;
+    JLabel shuffleCountLabel;
+    JLabel bombCountLabel;
+    JLabel freezeTimeCountLabel;
 
     // ── 定时器 ──
     Timer timer;           // 每秒更新倒计时
-    Timer comboTimer;       // COMBO 超时检测
+    Timer comboTimer;
+    Timer freezeTimer;
+    boolean isTimeFrozen = false;
+    Runnable onUseHint;
+    Runnable onUseShuffle;
+    Runnable onUseBomb;
+    Runnable onUseFreezeTime;// COMBO 超时检测
 
     // ── 游戏数据 ──
     int totalSeconds;       // 剩余秒数
@@ -58,13 +66,12 @@ public class StatusPanel extends JPanel {
         setBounds(offSetX, offSetY, width, height);
         setBackground(new Color(0x5c4a3a));
         setOpaque(true);
-        // 底部 hairline border 与 BoardPanel 分隔
-        setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(0x7a6a52)));
 
         // ── 字体 ──
         Font cjkFont = new Font("Microsoft YaHei", Font.PLAIN, 13);
         Font numFont = new Font("Arial", Font.BOLD, 28);
         Font comboFont = new Font("Microsoft YaHei", Font.BOLD, 14);
+        Font itemFont = new Font("Microsoft YaHei", Font.PLAIN, 12);
 
         // ── 分数 ──
         scoreLabel = new JLabel("分数", SwingConstants.CENTER);
@@ -105,6 +112,24 @@ public class StatusPanel extends JPanel {
         ));
         comboLabel.setVisible(false);
 
+        hintCountLabel = new JLabel("提示: 3", SwingConstants.CENTER);
+        hintCountLabel.setFont(itemFont);
+        hintCountLabel.setForeground(new Color(0xffeb3b));
+
+        shuffleCountLabel = new JLabel("重排: 3", SwingConstants.CENTER);
+        shuffleCountLabel.setFont(itemFont);
+        shuffleCountLabel.setForeground(new Color(0x4caf50));
+
+        bombCountLabel = new JLabel("炸弹: 2", SwingConstants.CENTER);
+        bombCountLabel.setFont(itemFont);
+        bombCountLabel.setForeground(new Color(0xf44336));
+
+        freezeTimeCountLabel = new JLabel("冻结: 2", SwingConstants.CENTER);
+        freezeTimeCountLabel.setFont(itemFont);
+        freezeTimeCountLabel.setForeground(new Color(0x2196f3));
+
+
+
         // ── 游戏参数初始化 ──
         totalSeconds = 120;
         countSeconds = 0;
@@ -119,26 +144,38 @@ public class StatusPanel extends JPanel {
         });
         comboTimer.setRepeats(false);
 
-        // ── 倒计时定时器（每秒刷新） ──
-        timer = new Timer(1000, e -> {
-            totalSeconds--;
-            countSeconds++;
+        freezeTimer = new Timer(1000, e -> {
+            totalSeconds++;
+            if (totalSeconds > 120) {
+                totalSeconds = 120;
+                freezeTimer.stop();
+                isTimeFrozen = false;
+            }
             seconds = totalSeconds % 60;
             minutes = totalSeconds / 60;
-            secondsUsed = countSeconds % 60;
-            minutesUsed = countSeconds / 60;
-
-            if (totalSeconds == 0) {
-                timer.stop();
-                JFrame p = (JFrame) SwingUtilities.getWindowAncestor(StatusPanel.this);
-                GameResultDialog.showLose(p);
-            }
             timeLabel.setText(String.format("%02d:%02d", minutes, seconds));
-            timecountLabel.setText(String.format("%02d:%02d", minutesUsed, secondsUsed));
         });
 
-        // ── 四栏布局 ──
-        setLayout(new GridLayout(1, 4));
+        timer = new Timer(1000, e -> {
+            if (!isTimeFrozen) {
+                totalSeconds--;
+                countSeconds++;
+                seconds = totalSeconds % 60;
+                minutes = totalSeconds / 60;
+                secondsUsed = countSeconds % 60;
+                minutesUsed = countSeconds / 60;
+
+                if (totalSeconds == 0) {
+                    timer.stop();
+                    JOptionPane.showMessageDialog(null, "你输了！");
+                }
+                timeLabel.setText(String.format("%02d:%02d", minutes, seconds));
+                timecountLabel.setText(String.format("%02d:%02d", minutesUsed, secondsUsed));
+            }
+        });
+
+        // ── 五栏布局 ──
+        setLayout(new GridLayout(1, 5));
 
         // 第 1 栏：分数 + COMBO
         JPanel left = new JPanel(new BorderLayout());
@@ -178,6 +215,14 @@ public class StatusPanel extends JPanel {
         pairInner.add(progressLabel);
         pairPanel.add(pairInner);
 
+        JPanel itemPanel = new JPanel(new GridLayout(4, 1));
+        itemPanel.setBackground(new Color(0x5c4a3a));
+        itemPanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        itemPanel.add(hintCountLabel);
+        itemPanel.add(shuffleCountLabel);
+        itemPanel.add(bombCountLabel);
+        itemPanel.add(freezeTimeCountLabel);
+
         // 第 4 栏：已用时间
         JPanel right = new JPanel(new GridBagLayout());
         right.setBackground(new Color(0x5c4a3a));
@@ -190,7 +235,24 @@ public class StatusPanel extends JPanel {
         add(left);
         add(middle);
         add(pairPanel);
+        add(itemPanel);
         add(right);
+    }
+
+    public void setOnUseHint(Runnable callback) {
+        this.onUseHint = callback;
+    }
+
+    public void setOnUseShuffle(Runnable callback) {
+        this.onUseShuffle = callback;
+    }
+
+    public void setOnUseBomb(Runnable callback) {
+        this.onUseBomb = callback;
+    }
+
+    public void setOnUseFreezeTime(Runnable callback) {
+        this.onUseFreezeTime = callback;
     }
 
     // ════════════════════════════════════════════════════
@@ -272,12 +334,26 @@ public class StatusPanel extends JPanel {
         statusLabel.setText("你赢了！");
     }
 
+    public void updateItemDisplay(int hints, int shuffles, int bombs, int freezes) {
+        hintCountLabel.setText("提示: " + hints);
+        shuffleCountLabel.setText("重排: " + shuffles);
+        bombCountLabel.setText("炸弹: " + bombs);
+        freezeTimeCountLabel.setText("冻结: " + freezes);
+    }
+
+    public void addFreezeTime(int seconds) {
+        isTimeFrozen = true;
+        freezeTimer.start();
+    }
+
     /** 重置所有状态（重新开始游戏时调用） */
     public void resetGame() {
         comboCount = 0;
         lastEliminationTime = 0;
         comboLabel.setVisible(false);
         comboTimer.stop();
+        freezeTimer.stop();
+        isTimeFrozen = false;
 
         totalSeconds = 120;
         countSeconds = 0;
@@ -290,6 +366,7 @@ public class StatusPanel extends JPanel {
 
         remainingPairLabel.setText("剩余可消除: 0对");
         progressLabel.setText("关卡进度: 0%");
+        updateItemDisplay(3, 3, 2, 2);
     }
     // ════════════════════════════════════════════════════
     // 存档相关方法
