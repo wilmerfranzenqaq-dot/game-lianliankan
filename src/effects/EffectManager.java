@@ -35,8 +35,8 @@ public class EffectManager {
         int x2 = pos2.getCol() * cellWidth + cellWidth / 2;
         int y2 = pos2.getRow() * cellHeight + cellHeight / 2;
         
-        int centerX = (x1 + x2) / 2;
-        int centerY = (y1 + y2) / 2;
+        int centerX = (x1 + x2) / 2 + 180;
+        int centerY = (y1 + y2) / 2 + 160;
         
         Color color = getColorByIconIndex(iconIndex);
 
