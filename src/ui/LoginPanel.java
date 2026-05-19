@@ -155,6 +155,22 @@ public class LoginPanel extends JPanel {
             }
         });
 
+        RoundedButton guestBtn = new RoundedButton("游客模式", 0x9a7a5a);
+        guestBtn.setForeground(Color.WHITE);
+        guestBtn.setBounds(90, 180, 170, 32);
+        add(guestBtn);
+
+        guestBtn.addActionListener(e -> {
+            String[] options = {"简单模式", "困难模式"};
+            int choice = JOptionPane.showOptionDialog(this,
+                    "选择游戏难度", "连连看",
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
+                    null, options, options[0]);
+            boolean isHardMode = (choice == 1);
+            MusicManager.play("game");
+            parent.startGame(null, isHardMode);
+        });
+
         // ── 背景图片 ──
         String bgPath = System.getProperty("user.dir") + File.separator + "resource"
                 + File.separator + "background.png";

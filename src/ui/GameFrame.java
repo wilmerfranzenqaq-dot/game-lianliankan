@@ -50,7 +50,7 @@ public class GameFrame extends JFrame {
 
     /**
      * 登录成功后调用 — 创建游戏页面并切换过去
-     * @param username   玩家账号名
+     * @param username   玩家账号名（null 表示游客）
      * @param isHardMode 是否困难模式
      */
     public void startGame(String username, boolean isHardMode) {

@@ -31,11 +31,13 @@ public class GamePanel extends JPanel {
     private boolean isHardMode;
     private String username;
     private String currentMode;
+    private boolean isGuestMode;
 
     public GamePanel(boolean isHardMode, LeaderBoard leaderBoard, String username) {
         this.isHardMode = isHardMode;
         this.username = username;
         this.currentMode = isHardMode ? "困难模式" : "简单模式";
+        this.isGuestMode = (username == null);
 
         setLayout(null);
         setBackground(new Color(0x6b5b45));
@@ -84,14 +86,20 @@ public class GamePanel extends JPanel {
 
         // 胜利回调 → 记录成绩到排行榜
         boardPanel.setOnWinCallback(() -> {
-            String mode = isHardMode ? "困难模式" : "简单模式";
-            LeaderRecord record = new LeaderRecord(username, mode,
-                    statusPanel.getScore(), statusPanel.getTimeUsed());
-            leaderBoard.addRecord(record);
+            if(!isGuestMode){
+                String mode = isHardMode ? "困难模式" : "简单模式";
+                LeaderRecord record = new LeaderRecord(username, mode,
+                        statusPanel.getScore(), statusPanel.getTimeUsed());
+                leaderBoard.addRecord(record);
+            }
         });
 
         // 保存按钮回调
         controlPanel.setOnSave(() -> {
+            if(isGuestMode){
+                JOptionPane.showMessageDialog(this, "游客模式不支持存档功能！");
+                return;
+            }
             JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(controlPanel);
             SaveLoadDialog dialog = new SaveLoadDialog(frame, GamePanel.this, username, currentMode);
             dialog.setVisible(true);
@@ -99,6 +107,10 @@ public class GamePanel extends JPanel {
 
         // 加载按钮回调
         controlPanel.setOnLoad(() -> {
+            if(isGuestMode){
+                JOptionPane.showMessageDialog(this, "游客模式不支持读档功能！");
+                return;
+            }
             JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(controlPanel);
             SaveLoadDialog dialog = new SaveLoadDialog(frame, GamePanel.this, username, currentMode);
             dialog.setVisible(true);
@@ -193,6 +205,10 @@ public class GamePanel extends JPanel {
      */
     public String getUsername() {
         return username;
+    }
+
+    public boolean isGuestMode() {
+        return isGuestMode;
     }
 
     /**
