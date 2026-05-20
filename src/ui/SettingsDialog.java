@@ -39,9 +39,6 @@ public class SettingsDialog extends JDialog {
     private static final int PAD_CARD   = 20;
     private static final int GAP_SECTION = 12;
 
-    private static final int[] TIME_OPTIONS = {60, 90, 120, 180, -1};
-
-    private final JComboBox<String> timeLimitCombo;
     private final JComboBox<String> modeCombo;
     private final JSlider bgmSlider;
     private final JSlider sfxSlider;
@@ -155,7 +152,7 @@ public class SettingsDialog extends JDialog {
 
     // ══════════════════════ 构造 ══════════════════════
 
-    public SettingsDialog(JFrame parent, int currentTime, boolean currentHardMode, int currentVolume) {
+    public SettingsDialog(JFrame parent, boolean currentHardMode, int currentVolume) {
         super(parent, "设置", true);
         setSize(480, 580);
         setLocationRelativeTo(parent);
@@ -167,18 +164,7 @@ public class SettingsDialog extends JDialog {
         content.setBackground(CANVAS);
         content.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
 
-        // 1. 时间限制
-        timeLimitCombo = styledCombo(
-            new String[]{"60 秒", "90 秒", "120 秒", "180 秒", "无限制"},
-            2
-        );
-        for (int i = 0; i < TIME_OPTIONS.length; i++) {
-            if (TIME_OPTIONS[i] == currentTime) { timeLimitCombo.setSelectedIndex(i); break; }
-        }
-        content.add(roundedPanel("时间限制", timeLimitCombo));
-        content.add(Box.createVerticalStrut(GAP_SECTION));
-
-        // 2. 模式选择
+        // 1. 模式选择
         modeCombo = styledCombo(new String[]{"简单模式（4 种棋子）", "困难模式（8 种棋子）"}, currentHardMode ? 1 : 0);
         content.add(roundedPanel("模式选择", modeCombo));
         content.add(Box.createVerticalStrut(GAP_SECTION));
@@ -274,8 +260,7 @@ public class SettingsDialog extends JDialog {
     public void setOnSkinChange(Consumer<String> callback) { this.onSkinChange = callback; }
     public boolean isRestartRequested() { return restartRequested; }
     public int getSelectedTimeSeconds() {
-        int idx = timeLimitCombo.getSelectedIndex();
-        return idx >= 0 && idx < TIME_OPTIONS.length ? TIME_OPTIONS[idx] : 120;
+        return 120; // 固定 120 秒
     }
     public boolean isHardMode() { return modeCombo.getSelectedIndex() == 1; }
     public int getSelectedCoreSize() { return isHardMode() ? 8 : 4; }

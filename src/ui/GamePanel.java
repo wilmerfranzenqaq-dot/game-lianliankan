@@ -134,12 +134,10 @@ public class GamePanel extends JPanel {
             }
 
             JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
-            SettingsDialog dlg = new SettingsDialog(frame, controlPanel.getCurrentTimeLimit(),
-                    controlPanel.getCurrentCoreSize() > 4, 50);
+            SettingsDialog dlg = new SettingsDialog(frame, controlPanel.getCurrentCoreSize() > 4, 50);
             dlg.setOnSkinChange(dir -> controlPanel.currentSkinDir = dir);
             dlg.setVisible(true);
             if (dlg.isRestartRequested()) {
-                controlPanel.currentTimeLimit = dlg.getSelectedTimeSeconds();
                 controlPanel.currentCoreSize = dlg.getSelectedCoreSize();
                 MusicManager.setSfxVolume(dlg.getSfxVolume() / 100f);
                 controlPanel.currentSkinDir = dlg.getSelectedSkinDir();
