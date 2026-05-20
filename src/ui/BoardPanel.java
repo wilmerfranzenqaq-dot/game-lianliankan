@@ -27,6 +27,15 @@ import java.util.List;
  */
 public class BoardPanel extends JPanel {
 
+    // ── 光标模式枚举 ──
+    public enum CursorMode {
+        NORMAL,
+        HINT,
+        BOMB,
+        SHUFFLE,
+        FREEZE
+    }
+
     // ── 布局参数 ──
     int offSetX;
     int offSetY;
@@ -47,6 +56,7 @@ public class BoardPanel extends JPanel {
 
     // ── 游戏状态 ──
     StatusPanel statusPanel;
+    ControlPanel controlPanel;          // 引用 ControlPanel 以便更新道具计数
     boolean started;                    // 是否已开始（START 按钮控制）
     boolean animating;                  // 是否正在播放消除动画
     Position firstSelected = null;      // 第一次点击选中的位置
@@ -54,7 +64,7 @@ public class BoardPanel extends JPanel {
     ItemManager itemManager;
     Position[] hintPositions = null;
     long hintShowTime = 0;
-    boolean bombMode = false;
+    CursorMode currentCursorMode = CursorMode.NORMAL;
 
     // ── 连接线绘制 ──
     List<Line> lineList = new ArrayList<>();
@@ -110,7 +120,7 @@ public class BoardPanel extends JPanel {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (bombMode) {
+                if (currentCursorMode == CursorMode.BOMB) {
                     handleBombClick(e.getX(), e.getY());
                 } else {
                     handleClick(e.getX(), e.getY());
@@ -127,6 +137,14 @@ public class BoardPanel extends JPanel {
             }
         });
         effectTimer.start();
+    }
+
+    // ════════════════════════════════════════════════════
+    // ControlPanel 引用设置
+    // ════════════════════════════════════════════════════
+
+    public void setControlPanel(ControlPanel controlPanel) {
+        this.controlPanel = controlPanel;
     }
 
     // ════════════════════════════════════════════════════
@@ -162,6 +180,8 @@ public class BoardPanel extends JPanel {
         this.secondSelected = null;
         this.lineList.clear();
         effectManager.clearAll();
+        currentCursorMode = CursorMode.NORMAL;
+        setCursor(Cursor.getDefaultCursor());
         
         // 重置道具管理器（恢复初始数量）
         this.itemManager = new ItemManager(gameBoard);
@@ -172,7 +192,7 @@ public class BoardPanel extends JPanel {
 
 
     /**
-     * 刷新 StatusPanel 上的配对进度信息
+     * 刷新 StatusPanel 上的配对进度信息，同时更新道具计数
      */
     public void refreshPairInfo() {
         int totalPairs = gameBoard.getTotalPairs();
@@ -182,17 +202,25 @@ public class BoardPanel extends JPanel {
         updateItemDisplay();
     }
 
+    /**
+     * 通过 ControlPanel 的 setItemCounts 更新道具计数显示
+     */
     private void updateItemDisplay() {
-        statusPanel.updateItemDisplay(
-                itemManager.getHintCount(),
-                itemManager.getShuffleCount(),
-                itemManager.getBombCount(),
-                itemManager.getFreezeTimeCount()
-        );
+        if (controlPanel != null) {
+            controlPanel.setItemCounts(
+                    itemManager.getHintCount(),
+                    itemManager.getShuffleCount(),
+                    itemManager.getBombCount(),
+                    itemManager.getFreezeTimeCount()
+            );
+        }
     }
 
     public void useHint() {
         if (!started || animating) return;
+
+        currentCursorMode = CursorMode.HINT;
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         Position[] result = itemManager.useHint();
         if (result != null) {
@@ -202,18 +230,25 @@ public class BoardPanel extends JPanel {
 
             Timer timer = new Timer(1500, e -> {
                 hintPositions = null;
+                currentCursorMode = CursorMode.NORMAL;
+                setCursor(Cursor.getDefaultCursor());
                 repaint();
             });
             timer.setRepeats(false);
             timer.start();
         } else {
             JOptionPane.showMessageDialog(this, "没有可消除的配对！");
+            currentCursorMode = CursorMode.NORMAL;
+            setCursor(Cursor.getDefaultCursor());
         }
         updateItemDisplay();
     }
 
     public void useShuffle() {
         if (!started || animating) return;
+
+        currentCursorMode = CursorMode.SHUFFLE;
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         if (itemManager.useShuffle()) {
             gameBoard.clearAllChosen();
@@ -223,6 +258,9 @@ public class BoardPanel extends JPanel {
         } else {
             JOptionPane.showMessageDialog(this, "没有重排道具了！");
         }
+
+        currentCursorMode = CursorMode.NORMAL;
+        setCursor(Cursor.getDefaultCursor());
         updateItemDisplay();
     }
 
@@ -234,20 +272,26 @@ public class BoardPanel extends JPanel {
             return;
         }
 
-        bombMode = true;
-        JOptionPane.showMessageDialog(this, "点击要消除的棋子");
+        currentCursorMode = CursorMode.BOMB;
+        setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
+        repaint();
     }
 
     private void handleBombClick(int x, int y) {
         Position pos = getPositionByPoint(x, y);
         if (pos == null) {
-            bombMode = false;
+            // 点击空白区域退出 bombMode
+            currentCursorMode = CursorMode.NORMAL;
+            setCursor(Cursor.getDefaultCursor());
+            repaint();
             return;
         }
 
         Cell cell = gameBoard.getCell(pos.getRow(), pos.getCol());
         if (cell.isEmpty()) {
-            bombMode = false;
+            currentCursorMode = CursorMode.NORMAL;
+            setCursor(Cursor.getDefaultCursor());
+            repaint();
             return;
         }
 
@@ -274,20 +318,26 @@ public class BoardPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "无法消除该棋子！");
         }
 
-        bombMode = false;
+        currentCursorMode = CursorMode.NORMAL;
+        setCursor(Cursor.getDefaultCursor());
         repaint();
     }
 
     public void useFreezeTime() {
         if (!started || animating) return;
 
+        currentCursorMode = CursorMode.FREEZE;
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
         int freezeSeconds = itemManager.useFreezeTime();
         if (freezeSeconds > 0) {
             statusPanel.addFreezeTime(freezeSeconds);
-            JOptionPane.showMessageDialog(this, "时间已冻结 " + freezeSeconds + " 秒！");
         } else {
             JOptionPane.showMessageDialog(this, "没有冻结道具了！");
         }
+
+        currentCursorMode = CursorMode.NORMAL;
+        setCursor(Cursor.getDefaultCursor());
         updateItemDisplay();
     }
 
@@ -373,6 +423,7 @@ public class BoardPanel extends JPanel {
         this.skinDir = dir;
         loadImages();
     }
+
     // 点击处理（核心交互逻辑）
     // ════════════════════════════════════════════════════
 
@@ -555,6 +606,18 @@ public class BoardPanel extends JPanel {
                 }
             }
 
+            // ── 绘制 bombMode 提示文字 ──
+            if (currentCursorMode == CursorMode.BOMB) {
+                g2.setFont(new Font("Microsoft YaHei", Font.PLAIN, 14));
+                g2.setColor(new Color(0xe8c87a));
+                String msg = "请点击一个棋子自动消除配对";
+                FontMetrics fm = g2.getFontMetrics();
+                int textWidth = fm.stringWidth(msg);
+                int textX = (getWidth() - textWidth) / 2;
+                int textY = fm.getAscent() + 6;
+                g2.drawString(msg, textX, textY);
+            }
+
             // ── 绘制破碎特效（在最上层） ──
             effectManager.draw(g2);
         }
@@ -580,6 +643,8 @@ public class BoardPanel extends JPanel {
         this.secondSelected = null;
         this.lineList.clear();
         this.itemManager = new ItemManager(saveboard);
+        this.currentCursorMode = CursorMode.NORMAL;
+        setCursor(Cursor.getDefaultCursor());
 
         gameBoard.clearAllChosen();
         effectManager.clearAll();

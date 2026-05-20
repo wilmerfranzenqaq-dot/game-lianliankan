@@ -4,13 +4,13 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * 游戏状态面板 — HUD 显示得分、倒计时、连击、配对进度
+ * 游戏状态面板 — HUD 显示得分、倒计时、配对进度、已用时间
  *
- * 四栏布局：
- *   左：当前分数 + COMBO 标签
- *   中：剩余时间（倒计时 120s → 0 判负）
- *   中右：关卡进度（剩余配对数 + 完成百分比）
- *   右：已用时间
+ * 四栏 GridBagLayout：
+ *   左（weightx=1.0, anchor=WEST）：当前分数 + COMBO 标签
+ *   中（weightx=1.0, anchor=CENTER）：剩余时间
+ *   中右（weightx=1.0, anchor=CENTER）：关卡进度（剩余配对数 + 完成百分比）
+ *   右（weightx=1.0, anchor=CENTER）：已用时间
  *
  * 连击系统：
  *   - 3 秒内连续消除 → COMBO 计数递增
@@ -32,20 +32,13 @@ public class StatusPanel extends JPanel {
     JLabel comboLabel;
     JLabel remainingPairLabel;
     JLabel progressLabel;
-    JLabel hintCountLabel;
-    JLabel shuffleCountLabel;
-    JLabel bombCountLabel;
-    JLabel freezeTimeCountLabel;
 
     // ── 定时器 ──
     Timer timer;           // 每秒更新倒计时
     Timer comboTimer;
     Timer freezeTimer;
     boolean isTimeFrozen = false;
-    Runnable onUseHint;
-    Runnable onUseShuffle;
-    Runnable onUseBomb;
-    Runnable onUseFreezeTime;// COMBO 超时检测
+    boolean gameStarted = false;    // 标记游戏是否已经开始
 
     // ── 游戏数据 ──
     int totalSeconds;       // 剩余秒数
@@ -64,14 +57,13 @@ public class StatusPanel extends JPanel {
 
     public StatusPanel(int offSetX, int offSetY, int width, int height) {
         setBounds(offSetX, offSetY, width, height);
-        setBackground(new Color(0x5c4a3a));
+        setBackground(new Color(0x4a3d2e)); // SURFACE_2
         setOpaque(true);
 
         // ── 字体 ──
         Font cjkFont = new Font("Microsoft YaHei", Font.PLAIN, 13);
         Font numFont = new Font("Arial", Font.BOLD, 28);
         Font comboFont = new Font("Microsoft YaHei", Font.BOLD, 14);
-        Font itemFont = new Font("Microsoft YaHei", Font.PLAIN, 12);
 
         // ── 分数 ──
         scoreLabel = new JLabel("分数", SwingConstants.CENTER);
@@ -89,7 +81,7 @@ public class StatusPanel extends JPanel {
 
         timeLabel = new JLabel("00:00", SwingConstants.CENTER);
         timeLabel.setFont(numFont);
-        timeLabel.setForeground(new Color(0xf5e6c8));
+        timeLabel.setForeground(new Color(0xe8c87a));
 
         // ── 已用时间 ──
         timeuseLabel = new JLabel("已经用时", SwingConstants.CENTER);
@@ -98,7 +90,7 @@ public class StatusPanel extends JPanel {
 
         timecountLabel = new JLabel("00:00", SwingConstants.CENTER);
         timecountLabel.setFont(numFont);
-        timecountLabel.setForeground(new Color(0xc4b091));
+        timecountLabel.setForeground(new Color(0xe8c87a));
 
         // ── COMBO 标签 ──
         comboLabel = new JLabel("", SwingConstants.CENTER);
@@ -111,24 +103,6 @@ public class StatusPanel extends JPanel {
                 BorderFactory.createEmptyBorder(2, 6, 2, 6)
         ));
         comboLabel.setVisible(false);
-
-        hintCountLabel = new JLabel("提示: 3", SwingConstants.CENTER);
-        hintCountLabel.setFont(itemFont);
-        hintCountLabel.setForeground(new Color(0xffeb3b));
-
-        shuffleCountLabel = new JLabel("重排: 3", SwingConstants.CENTER);
-        shuffleCountLabel.setFont(itemFont);
-        shuffleCountLabel.setForeground(new Color(0x4caf50));
-
-        bombCountLabel = new JLabel("炸弹: 2", SwingConstants.CENTER);
-        bombCountLabel.setFont(itemFont);
-        bombCountLabel.setForeground(new Color(0xf44336));
-
-        freezeTimeCountLabel = new JLabel("冻结: 2", SwingConstants.CENTER);
-        freezeTimeCountLabel.setFont(itemFont);
-        freezeTimeCountLabel.setForeground(new Color(0x2196f3));
-
-
 
         // ── 游戏参数初始化 ──
         totalSeconds = 120;
@@ -174,13 +148,16 @@ public class StatusPanel extends JPanel {
             }
         });
 
-        // ── 五栏布局 ──
-        setLayout(new GridLayout(1, 5));
+        // ── 四栏 GridBagLayout ──
+        setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weighty = 1.0;
 
-        // 第 1 栏：分数 + COMBO
+        // 第 1 栏：分数（weightx=1.0, anchor=WEST — 左对齐）
         JPanel left = new JPanel(new BorderLayout());
-        left.setBackground(new Color(0x5c4a3a));
-        left.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        left.setBackground(new Color(0x4a3d2e));
+        left.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 8));
         JPanel scoreBox = new JPanel(new BorderLayout());
         scoreBox.setOpaque(false);
         scoreBox.add(scoreLabel, BorderLayout.NORTH);
@@ -188,16 +165,28 @@ public class StatusPanel extends JPanel {
         left.add(scoreBox, BorderLayout.CENTER);
         left.add(comboLabel, BorderLayout.SOUTH);
 
-        // 第 2 栏：剩余时间
+        gbc.gridx = 0;
+        gbc.weightx = 1.0;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        add(left, gbc);
+
+        // 第 2 栏：剩余时间（weightx=1.0, anchor=CENTER — 居中对齐）
         JPanel middle = new JPanel(new GridBagLayout());
-        middle.setBackground(new Color(0x5c4a3a));
+        middle.setBackground(new Color(0x4a3d2e));
         JPanel middleInner = new JPanel(new GridLayout(2, 1));
-        middleInner.setBackground(new Color(0x5c4a3a));
+        middleInner.setBackground(new Color(0x4a3d2e));
         middleInner.add(statusLabel);
         middleInner.add(timeLabel);
         middle.add(middleInner);
 
-        // 第 3 栏：配对进度
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        add(middle, gbc);
+
+        // 第 3 栏：配对进度（weightx=1.0, anchor=CENTER — 居中）
         Font pairFont = new Font("Microsoft YaHei", Font.PLAIN, 12);
         remainingPairLabel = new JLabel("剩余可消除：0对", SwingConstants.CENTER);
         remainingPairLabel.setFont(pairFont);
@@ -208,51 +197,55 @@ public class StatusPanel extends JPanel {
         progressLabel.setForeground(new Color(0xf5e6c8));
 
         JPanel pairPanel = new JPanel(new GridBagLayout());
-        pairPanel.setBackground(new Color(0x5c4a3a));
+        pairPanel.setBackground(new Color(0x4a3d2e));
         JPanel pairInner = new JPanel(new GridLayout(2, 1));
-        pairInner.setBackground(new Color(0x5c4a3a));
+        pairInner.setBackground(new Color(0x4a3d2e));
         pairInner.add(remainingPairLabel);
         pairInner.add(progressLabel);
         pairPanel.add(pairInner);
 
-        JPanel itemPanel = new JPanel(new GridLayout(4, 1));
-        itemPanel.setBackground(new Color(0x5c4a3a));
-        itemPanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
-        itemPanel.add(hintCountLabel);
-        itemPanel.add(shuffleCountLabel);
-        itemPanel.add(bombCountLabel);
-        itemPanel.add(freezeTimeCountLabel);
+        gbc.gridx = 2;
+        gbc.weightx = 1.0;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        add(pairPanel, gbc);
 
-        // 第 4 栏：已用时间
+        // 第 4 栏：已用时间（weightx=1.0, anchor=CENTER — 居中对齐）
         JPanel right = new JPanel(new GridBagLayout());
-        right.setBackground(new Color(0x5c4a3a));
+        right.setBackground(new Color(0x4a3d2e));
         JPanel rightInner = new JPanel(new GridLayout(2, 1));
-        rightInner.setBackground(new Color(0x5c4a3a));
+        rightInner.setBackground(new Color(0x4a3d2e));
         rightInner.add(timeuseLabel);
         rightInner.add(timecountLabel);
         right.add(rightInner);
 
-        add(left);
-        add(middle);
-        add(pairPanel);
-        add(itemPanel);
-        add(right);
+        gbc.gridx = 3;
+        gbc.weightx = 1.0;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        add(right, gbc);
     }
 
-    public void setOnUseHint(Runnable callback) {
-        this.onUseHint = callback;
+    // ════════════════════════════════════════════════════
+    // 计时器控制（供 SettingsDialog 使用）
+    // ════════════════════════════════════════════════════
+
+    /**
+     * 暂停倒计时（打开设置对话框时调用）
+     */
+    public void pauseTimer() {
+        if (timer != null && timer.isRunning()) {
+            timer.stop();
+        }
     }
 
-    public void setOnUseShuffle(Runnable callback) {
-        this.onUseShuffle = callback;
-    }
-
-    public void setOnUseBomb(Runnable callback) {
-        this.onUseBomb = callback;
-    }
-
-    public void setOnUseFreezeTime(Runnable callback) {
-        this.onUseFreezeTime = callback;
+    /**
+     * 恢复倒计时（关闭设置对话框时调用）
+     */
+    public void resumeTimer() {
+        if (gameStarted && timer != null && !timer.isRunning()) {
+            timer.start();
+        }
     }
 
     // ════════════════════════════════════════════════════
@@ -282,6 +275,7 @@ public class StatusPanel extends JPanel {
     /** 启动游戏倒计时 */
     public void startGame() {
         statusLabel.setText("进行中");
+        gameStarted = true;
         timer.start();
     }
 
@@ -331,14 +325,8 @@ public class StatusPanel extends JPanel {
     /** 胜利 — 停止倒计时 */
     public void winGame() {
         timer.stop();
+        gameStarted = false;
         statusLabel.setText("你赢了！");
-    }
-
-    public void updateItemDisplay(int hints, int shuffles, int bombs, int freezes) {
-        hintCountLabel.setText("提示: " + hints);
-        shuffleCountLabel.setText("重排: " + shuffles);
-        bombCountLabel.setText("炸弹: " + bombs);
-        freezeTimeCountLabel.setText("冻结: " + freezes);
     }
 
     public void addFreezeTime(int seconds) {
@@ -354,6 +342,7 @@ public class StatusPanel extends JPanel {
         comboTimer.stop();
         freezeTimer.stop();
         isTimeFrozen = false;
+        gameStarted = false;
 
         totalSeconds = 120;
         countSeconds = 0;
@@ -366,8 +355,8 @@ public class StatusPanel extends JPanel {
 
         remainingPairLabel.setText("剩余可消除: 0对");
         progressLabel.setText("关卡进度: 0%");
-        updateItemDisplay(3, 3, 2, 2);
     }
+
     // ════════════════════════════════════════════════════
     // 存档相关方法
     // ════════════════════════════════════════════════════
@@ -428,10 +417,9 @@ public class StatusPanel extends JPanel {
      */
     public void startTimer() {
         statusLabel.setText("进行中");
+        gameStarted = true;
         timer.start();
     }
-
-
 
     // ════════════════════════════════════════════════════
     // 内部类：COMBO 彩虹闪烁动画

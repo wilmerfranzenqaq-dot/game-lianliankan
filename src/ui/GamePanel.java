@@ -3,6 +3,8 @@ package ui;
 import model.*;
 import utils.SaveManager;
 
+import utils.MusicManager;
+
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
@@ -51,6 +53,9 @@ public class GamePanel extends JPanel {
         boardPanel = new BoardPanel(new GameBoard(totalRow, totalCol, board), statusPanel,
                 0, 100, 800, 750);
         controlPanel = new ControlPanel(statusPanel, boardPanel, 0, 850, 800, 150);
+
+        // ── 将 ControlPanel 引用注入 BoardPanel（供 setItemCounts 调用） ──
+        boardPanel.setControlPanel(controlPanel);
 
         catPanel = new CatPanel();
         catPanel.setBounds(800, 0, 200, 1000);
@@ -120,6 +125,36 @@ public class GamePanel extends JPanel {
         controlPanel.setOnUseFreezeTime(() -> {
             boardPanel.useFreezeTime();
         });
+
+        // ── 监听 SettingsDialog：打开时暂停计时器，关闭时恢复 ──
+        controlPanel.settingsButton.addActionListener(e -> {
+            // 暂停计时器（只暂停 StatusPanel 的倒计时，不改变 gameStarted 状态）
+            if (boardPanel.isStarted()) {
+                statusPanel.pauseTimer();
+            }
+
+            JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
+            SettingsDialog dlg = new SettingsDialog(frame, controlPanel.getCurrentTimeLimit(),
+                    controlPanel.getCurrentCoreSize() > 4, 50);
+            dlg.setOnSkinChange(dir -> controlPanel.currentSkinDir = dir);
+            dlg.setVisible(true);
+            if (dlg.isRestartRequested()) {
+                controlPanel.currentTimeLimit = dlg.getSelectedTimeSeconds();
+                controlPanel.currentCoreSize = dlg.getSelectedCoreSize();
+                MusicManager.setSfxVolume(dlg.getSfxVolume() / 100f);
+                controlPanel.currentSkinDir = dlg.getSelectedSkinDir();
+                // 重置后会恢复计时器（statusPanel.resetGame 会停止它）
+                if (controlPanel.onRestart != null) controlPanel.onRestart.run();
+            } else {
+                // 没有重置，恢复计时器
+                if (boardPanel.isStarted()) {
+                    statusPanel.resumeTimer();
+                }
+            }
+        });
+
+        // 初始刷新配对信息
+        boardPanel.refreshPairInfo();
     }
 
     /**
