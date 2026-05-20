@@ -98,7 +98,7 @@ public class BoardPanel extends JPanel {
         File[] files = dir.listFiles();
         if (files != null) {
             for (File file : files) {
-                if (file.getName().endsWith(".png")) {
+                if (file.getName().endsWith(".png") && file.getName().matches("\\d+\\.png")) {
                     ImageIcon icon = new ImageIcon(file.getPath());
                     imageList.add(icon.getImage());
                 }

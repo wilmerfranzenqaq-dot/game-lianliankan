@@ -1,4 +1,5 @@
 package ui;
+import utils.MusicManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -149,11 +150,12 @@ public class ControlPanel extends JPanel {
         add(settingsButton);
         settingsButton.addActionListener(e -> {
             JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
-            SettingsDialog dlg = new SettingsDialog(frame, currentTimeLimit, currentCoreSize);
+            SettingsDialog dlg = new SettingsDialog(frame, currentTimeLimit, currentCoreSize > 4, 50);
             dlg.setVisible(true);
             if (dlg.isRestartRequested()) {
                 currentTimeLimit = dlg.getSelectedTimeSeconds();
                 currentCoreSize = dlg.getSelectedCoreSize();
+                MusicManager.setSfxVolume(dlg.getSfxVolume() / 100f);
                 if (onRestart != null) onRestart.run();
             }
         });

@@ -20,6 +20,7 @@ public class MusicManager {
     private static String pendingTrack;
     private static boolean switching;
     private static float volume = 0.5f;
+    private static float sfxVolume = 0.8f;
 
     // ── BGM ──
 
@@ -95,6 +96,14 @@ public class MusicManager {
         return volume;
     }
 
+    public static void setSfxVolume(float vol) {
+        sfxVolume = Math.max(0f, Math.min(1f, vol));
+    }
+
+    public static float getSfxVolume() {
+        return sfxVolume;
+    }
+
     // ── 内部 ──
 
     private static void loadAndPlay(String name) {
@@ -147,7 +156,7 @@ public class MusicManager {
         try {
             if (clip.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
                 FloatControl gain = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
-                float sfxVol = Math.min(1f, volume * 1.2f);
+                float sfxVol = Math.min(1f, sfxVolume);
                 float dB = sfxVol <= 0f ? gain.getMinimum()
                         : gain.getMinimum() + (gain.getMaximum() - gain.getMinimum()) * (float) Math.log10(1 + 9 * sfxVol);
                 gain.setValue(Math.max(gain.getMinimum(), Math.min(gain.getMaximum(), dB)));
