@@ -3,6 +3,7 @@ package ui;
 import effects.EffectManager;
 import model.*;
 import model.Rectangle;
+import utils.MusicManager;
 import utils.Utils;
 
 import javax.swing.*;
@@ -435,6 +436,8 @@ public class BoardPanel extends JPanel {
             secondCell.setChosen(true);
             repaint();
             animating = true;
+
+            MusicManager.playSfx("click");
 
             List<Position> path = Utils.findPath(gameBoard, firstSelected, secondSelected);
             showLine(path);
