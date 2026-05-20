@@ -5,6 +5,7 @@ import utils.MusicManager;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.util.function.Consumer;
 
 /**
  * 游戏设置对话框（JScrollPane 增强版）
@@ -19,6 +20,8 @@ public class SettingsDialog extends JDialog {
     private final JSlider sfxSlider;
 
     private boolean restartRequested = false;
+    private String skinDir = "resource";
+    private Consumer<String> onSkinChange;
 
     public SettingsDialog(JFrame parent, int currentTime, boolean currentHardMode, int currentVolume) {
         super(parent, "设置", true);
@@ -90,11 +93,17 @@ public class SettingsDialog extends JDialog {
         skinPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "🎨 皮肤主题", TitledBorder.LEFT, TitledBorder.TOP, labelFont));
         JComboBox<String> skinCombo = new JComboBox<>(new String[]{"经典图标", "水果蔬菜"});
         skinCombo.setFont(valueFont);
+        String dirLabel = skinCombo.getSelectedIndex() == 0 ? "resource" : "resource/fruit";
         skinPanel.add(skinCombo);
         JLabel skinPreview = new JLabel("🍎🥕🍇🍄");
         skinPreview.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
         skinPanel.add(skinPreview);
         content.add(skinPanel);
+        skinCombo.addActionListener(e -> {
+            skinDir = skinCombo.getSelectedIndex() == 0 ? "resource" : "resource/fruit";
+            String skinDir = skinCombo.getSelectedIndex() == 0 ? "resource" : "resource/fruit";
+            if (onSkinChange != null) onSkinChange.accept(skinDir);
+        });
 
         // 6. 操作说明
         JPanel tipsPanel = new JPanel();
@@ -138,6 +147,8 @@ public class SettingsDialog extends JDialog {
         add(scrollPane, BorderLayout.CENTER);
     }
 
+    public void setOnSkinChange(Consumer<String> callback) { this.onSkinChange = callback; }
+
     public boolean isRestartRequested() { return restartRequested; }
     public int getSelectedTimeSeconds() {
         int idx = timeLimitCombo.getSelectedIndex();
@@ -147,4 +158,5 @@ public class SettingsDialog extends JDialog {
     public int getSelectedCoreSize() { return isHardMode() ? 8 : 4; }
     public int getMusicVolume() { return bgmSlider.getValue(); }
     public int getSfxVolume() { return sfxSlider.getValue(); }
+    public String getSelectedSkinDir() { return skinDir; }
 }

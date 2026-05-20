@@ -41,6 +41,7 @@ public class BoardPanel extends JPanel {
 
     // ── 图片资源 ──
     List<Image> imageList = new ArrayList<>();
+    private String skinDir = "resource";
     Image[] scaledImages;
 
     // ── 游戏状态 ──
@@ -91,21 +92,9 @@ public class BoardPanel extends JPanel {
         this.cellHeight = this.height / totalRow;
 
         // ── 加载棋子图片资源 ──
-        File dir = new File("resource");
-        if (!dir.exists()) {
-            dir = new File("D:" + File.separator + "game-lianliankan" + File.separator + "resource");
-        }
-        File[] files = dir.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (file.getName().endsWith(".png") && file.getName().matches("\\d+\\.png")) {
-                    ImageIcon icon = new ImageIcon(file.getPath());
-                    imageList.add(icon.getImage());
-                }
-            }
-        }
+        loadImages();
 
-        // 预缩放到格子大小（同步缩放，消除每帧缩放开销 + 懒加载空白 bug）
+        // 预缩放到格子大小        // 预缩放到格子大小（同步缩放，消除每帧缩放开销 + 懒加载空白 bug）
         scaledImages = new Image[imageList.size()];
         for (int i = 0; i < imageList.size(); i++) {
             BufferedImage bi = new BufferedImage(cellWidth, cellHeight, BufferedImage.TYPE_INT_ARGB);
@@ -350,6 +339,39 @@ public class BoardPanel extends JPanel {
     }
 
     // ════════════════════════════════════════════════════
+    private void loadImages() {
+        File dir = new File(skinDir);
+        if (!dir.exists()) {
+            dir = new File("D:" + File.separator + "game-lianliankan" + File.separator + skinDir);
+        }
+        imageList.clear();
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                String fname = file.getName();
+                if (fname.endsWith(".png")) {
+                    ImageIcon icon = new ImageIcon(file.getPath());
+                    imageList.add(icon.getImage());
+                }
+            }
+        }
+        // 预缩放到格子大小
+        scaledImages = new Image[imageList.size()];
+        for (int i = 0; i < imageList.size(); i++) {
+            BufferedImage bi = new BufferedImage(cellWidth, cellHeight, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = bi.createGraphics();
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2d.drawImage(imageList.get(i), 0, 0, cellWidth, cellHeight, null);
+            g2d.dispose();
+            scaledImages[i] = bi;
+        }
+        repaint();
+    }
+
+    public void setSkinDir(String dir) {
+        this.skinDir = dir;
+        loadImages();
+    }
     // 点击处理（核心交互逻辑）
     // ════════════════════════════════════════════════════
 

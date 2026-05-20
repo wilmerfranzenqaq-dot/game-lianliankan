@@ -69,6 +69,7 @@ public class GamePanel extends JPanel {
             int newRow = newBoard.length;
             int newCol = newBoard[0].length;
             boardPanel.setGameBoard(new GameBoard(newRow, newCol, newBoard));
+            boardPanel.setSkinDir(controlPanel.getSkinDir());
             statusPanel.resetGame();
             boardPanel.refreshPairInfo();
         });

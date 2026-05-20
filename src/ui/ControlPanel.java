@@ -48,6 +48,12 @@ public class ControlPanel extends JPanel {
     // ── 设置参数（从 SettingsDialog 读回） ──
     int currentTimeLimit = 120;
     int currentCoreSize = 4;
+    String currentSkinDir = "resource";
+
+    public String getSkinDir() { return currentSkinDir; }
+
+    public int getCurrentCoreSize() { return currentCoreSize; }
+    public int getCurrentTimeLimit() { return currentTimeLimit; }
 
     // ════════════════════════════════════════════════════
     // 回调注册
@@ -151,11 +157,13 @@ public class ControlPanel extends JPanel {
         settingsButton.addActionListener(e -> {
             JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
             SettingsDialog dlg = new SettingsDialog(frame, currentTimeLimit, currentCoreSize > 4, 50);
+            dlg.setOnSkinChange(dir -> currentSkinDir = dir);
             dlg.setVisible(true);
             if (dlg.isRestartRequested()) {
                 currentTimeLimit = dlg.getSelectedTimeSeconds();
                 currentCoreSize = dlg.getSelectedCoreSize();
                 MusicManager.setSfxVolume(dlg.getSfxVolume() / 100f);
+                currentSkinDir = dlg.getSelectedSkinDir();
                 if (onRestart != null) onRestart.run();
             }
         });
