@@ -168,18 +168,8 @@ public class ControlPanel extends JPanel {
         settingsButton = createStyledButton("SETTINGS", new Color(0x5c4a3a), new Color(0xa09070));
         settingsButton.setBounds(x + 4 * (btnWidth + gap), y, btnWidth, btnHeight);
         add(settingsButton);
-        settingsButton.addActionListener(e -> {
-            JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
-            SettingsDialog dlg = new SettingsDialog(frame, currentCoreSize > 4, 50);
-            dlg.setOnSkinChange(dir -> currentSkinDir = dir);
-            dlg.setVisible(true);
-            if (dlg.isRestartRequested()) {
-                currentCoreSize = dlg.getSelectedCoreSize();
-                MusicManager.setSfxVolume(dlg.getSfxVolume() / 100f);
-                currentSkinDir = dlg.getSelectedSkinDir();
-                if (onRestart != null) onRestart.run();
-            }
-        });
+        // settingsButton 的 actionListener 统一在 GamePanel 中管理
+        // （含暂停/恢复计时器逻辑）
 
         leaderBoardBtn = createStyledButton("RANK", new Color(0x4a3d2e), new Color(0xe8c87a));
         leaderBoardBtn.setBounds(x + 5 * (btnWidth + gap), y, btnWidth, btnHeight);
