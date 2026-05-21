@@ -19,6 +19,7 @@ public class GameFrame extends JFrame {
     private CardLayout cardLayout;
     private boolean gameAdded = false;
     private LeaderBoard leaderBoard;
+    private LoadingOverlay loadingOverlay;
 
     public GameFrame(String title, int contentW, int contentH) {
         super(title);
@@ -59,16 +60,85 @@ public class GameFrame extends JFrame {
      * @param catName    小猫名字
      * @param isHardMode 是否困难模式
      */
+    /**
+     * 登录成功后调用 — 先显示加载动画，再创建游戏页面并切换过去
+     */
     public void startGame(String username, String catName, boolean isHardMode) {
-        if (!gameAdded) {
-            add(new GamePanel(isHardMode, leaderBoard, username, catName), "game");
-            gameAdded = true;
+        // 显示加载动画
+        if (loadingOverlay == null) {
+            loadingOverlay = new LoadingOverlay();
+            add(loadingOverlay, "loading");
         }
-        showPage("game");
+        showPage("loading");
+
+        // 延迟一帧再创建游戏界面（确保加载条动画能跑）
+        Timer timer = new Timer(400, e -> {
+            if (!gameAdded) {
+                add(new GamePanel(isHardMode, leaderBoard, username, catName), "game");
+                gameAdded = true;
+            }
+            showPage("game");
+        });
+        timer.setRepeats(false);
+        timer.start();
     }
 
     /** 切换到指定页面 */
     public void showPage(String name) {
         cardLayout.show(getContentPane(), name);
+    }
+
+    // ── 加载动画面板 ──
+
+    /**
+     * 细条加载动画：深木底色 + 一条金色小条来回滚动
+     * 模仿成熟游戏的 loading bar 风格
+     */
+    class LoadingOverlay extends JPanel {
+
+        private float progress = 0f;
+        private int direction = 1;
+
+        LoadingOverlay() {
+            setBackground(new Color(0x2c2822)); // 深木色
+
+            Timer animTimer = new Timer(16, e -> {
+                progress += direction * 0.025f;
+                if (progress > 0.85f || progress < 0.05f) {
+                    direction = -direction;
+                }
+                repaint();
+            });
+            animTimer.start();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int w = getWidth();
+            int h = getHeight();
+
+            // 中间细条轨道
+            int barW = w / 3;
+            int barH = 4;
+            int barX = w / 2 - barW / 2;
+            int barY = h / 2 - barH / 2;
+
+            // 轨道底色
+            g2.setColor(new Color(0x4a443a));
+            g2.fillRoundRect(barX, barY, barW, barH, 4, 4);
+
+            // 金色进度条
+            int fillW = (int) (barW * progress);
+            if (fillW > 0) {
+                g2.setColor(new Color(0xd4a04a));
+                g2.fillRoundRect(barX, barY, fillW, barH, 4, 4);
+            }
+
+            g2.dispose();
+        }
     }
 }
