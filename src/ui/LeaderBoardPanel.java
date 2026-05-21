@@ -49,26 +49,11 @@ public class LeaderBoardPanel extends JDialog {
         add(tablesPanel, BorderLayout.CENTER);
 
         // ── 关闭按钮 ──
-        JButton closeBtn = new JButton("关闭") {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(getBackground());
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), ThemeColors.RADIUS_BTN, ThemeColors.RADIUS_BTN);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
+        RoundedButton closeBtn = new RoundedButton("关闭", 0xd4a04a);
         closeBtn.setFont(ThemeColors.FONT_BODY);
-        closeBtn.setBackground(ThemeColors.PRIMARY);
         closeBtn.setForeground(ThemeColors.TEXT_ON_GOLD);
-        closeBtn.setFocusPainted(false);
-        closeBtn.setBorderPainted(false);
-        closeBtn.setContentAreaFilled(false);
-        closeBtn.setOpaque(false);
-        closeBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         closeBtn.setPreferredSize(new Dimension(100, 36));
+        closeBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         closeBtn.addActionListener(e -> dispose());
 
         JPanel btnPanel = new JPanel();
