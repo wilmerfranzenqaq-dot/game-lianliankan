@@ -155,7 +155,65 @@ public class GamePanel extends JPanel {
 
         // 初始刷新配对信息
         boardPanel.refreshPairInfo();
+
+        // ── 键盘快捷键 ──
+        setupKeyboardShortcuts();
     }
+
+    /**
+     * 注册全局键盘快捷键
+     * Space=START, R=restart, S=save, L=load
+     */
+    private void setupKeyboardShortcuts() {
+        InputMap im = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap am = getActionMap();
+
+        im.put(KeyStroke.getKeyStroke("SPACE"), "gameStart");
+        im.put(KeyStroke.getKeyStroke("typed r"), "gameRestart");
+        im.put(KeyStroke.getKeyStroke("typed R"), "gameRestart");
+        im.put(KeyStroke.getKeyStroke("typed s"), "gameSave");
+        im.put(KeyStroke.getKeyStroke("typed S"), "gameSave");
+        im.put(KeyStroke.getKeyStroke("typed l"), "gameLoad");
+        im.put(KeyStroke.getKeyStroke("typed L"), "gameLoad");
+
+        am.put("gameStart", new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (controlPanel.startButton != null && controlPanel.startButton.isEnabled()) {
+                    controlPanel.startButton.doClick();
+                }
+            }
+        });
+
+        am.put("gameRestart", new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (controlPanel.restartButton != null && controlPanel.restartButton.isEnabled()) {
+                    controlPanel.restartButton.doClick();
+                }
+            }
+        });
+
+        am.put("gameSave", new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (controlPanel.saveButton != null && controlPanel.saveButton.isEnabled()) {
+                    controlPanel.saveButton.doClick();
+                }
+            }
+        });
+
+        am.put("gameLoad", new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (controlPanel.loadButton != null && controlPanel.loadButton.isEnabled()) {
+                    controlPanel.loadButton.doClick();
+                }
+            }
+        });
+    }
+
+    // ── 供 GameFrame 菜单栏调用的公开暴露按钮 ──
+    public JButton getStartButton() { return controlPanel.startButton; }
+    public JButton getRestartButton() { return controlPanel.restartButton; }
+    public JButton getSaveButton() { return controlPanel.saveButton; }
+    public JButton getLoadButton() { return controlPanel.loadButton; }
 
     /**
      * 保存当前游戏状态到指定槽位
