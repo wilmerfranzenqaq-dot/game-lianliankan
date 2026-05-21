@@ -13,6 +13,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -77,6 +78,9 @@ public class BoardPanel extends JPanel {
     // ── 特效系统 ──
     private EffectManager effectManager;
 
+    // ── COMBO 浮动文字 ──
+    private List<ComboText> comboTexts = new ArrayList<>();
+
     // ════════════════════════════════════════════════════
     // 构造与初始化
     // ════════════════════════════════════════════════════
@@ -132,7 +136,16 @@ public class BoardPanel extends JPanel {
         effectManager = new EffectManager();
         Timer effectTimer = new Timer(16, e -> {
             effectManager.update();
-            if (effectManager.hasActiveEffects()) {
+
+            // 更新 COMBO 浮动文字
+            Iterator<ComboText> iter = comboTexts.iterator();
+            while (iter.hasNext()) {
+                ComboText ct = iter.next();
+                ct.update();
+                if (ct.life <= 0) iter.remove();
+            }
+
+            if (effectManager.hasActiveEffects() || !comboTexts.isEmpty()) {
                 repaint();
             }
         });
@@ -205,6 +218,39 @@ public class BoardPanel extends JPanel {
     /**
      * 通过 ControlPanel 的 setItemCounts 更新道具计数显示
      */
+    // ── COMBO 浮动文字内部类 ──
+    static class ComboText {
+        int x, y;
+        String text;
+        float life = 1.0f; // 1.0 → 0.0
+        int vy = -2;       // 上浮
+
+        ComboText(int x, int y, String text) {
+            this.x = x;
+            this.y = y;
+            this.text = text;
+        }
+
+        void update() {
+            y += vy;
+            life -= 0.02f;
+        }
+
+        void draw(Graphics2D g) {
+            if (life <= 0) return;
+            g.setFont(new Font("Microsoft YaHei", Font.BOLD, 18));
+            g.setColor(new Color(
+                    ThemeColors.FX_COMBO.getRed(),
+                    ThemeColors.FX_COMBO.getGreen(),
+                    ThemeColors.FX_COMBO.getBlue(),
+                    (int)(life * 255)
+            ));
+            FontMetrics fm = g.getFontMetrics();
+            int tw = fm.stringWidth(text);
+            g.drawString(text, x - tw / 2, y);
+        }
+    }
+
     private void updateItemDisplay() {
         if (controlPanel != null) {
             controlPanel.setItemCounts(
@@ -502,6 +548,14 @@ public class BoardPanel extends JPanel {
                 secondCell.setEmpty(true);
                 statusPanel.addScore(10);
 
+                // COMBO 浮动文字：在消除位置中点显示
+                int cx = (firstSelected.getCol() + secondSelected.getCol()) * cellWidth / 2 + cellWidth / 2;
+                int cy = (firstSelected.getRow() + secondSelected.getRow()) * cellHeight / 2 + cellHeight / 2;
+                String comboMsg = "COMBO x" + statusPanel.getComboCount();
+                if (statusPanel.getComboCount() >= 3) {
+                    comboTexts.add(new ComboText(cx, cy, comboMsg));
+                }
+
                 if (onFishFeed != null) onFishFeed.run();
                 refreshPairInfo();
 
@@ -620,6 +674,11 @@ public class BoardPanel extends JPanel {
 
             // ── 绘制破碎特效（在最上层） ──
             effectManager.draw(g2);
+
+            // ── 绘制 COMBO 浮动文字（最上层） ──
+            for (ComboText ct : comboTexts) {
+                ct.draw(g2);
+            }
         }
     }
 

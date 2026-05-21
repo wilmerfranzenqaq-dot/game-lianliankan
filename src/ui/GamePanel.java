@@ -32,9 +32,10 @@ public class GamePanel extends JPanel {
     private CatPanel catPanel;
     private boolean isHardMode;
     private String username;
+    private String catName;
     private String currentMode;
 
-    public GamePanel(boolean isHardMode, LeaderBoard leaderBoard, String username) {
+    public GamePanel(boolean isHardMode, LeaderBoard leaderBoard, String username, String catName) {
         this.isHardMode = isHardMode;
         this.username = username;
         this.currentMode = isHardMode ? "困难模式" : "简单模式";
@@ -88,10 +89,10 @@ public class GamePanel extends JPanel {
             panel.setVisible(true);
         });
 
-        // 胜利回调 → 记录成绩到排行榜
+        // 胜利回调 → 记录成绩到排行榜（显示猫名字）
         boardPanel.setOnWinCallback(() -> {
             String mode = isHardMode ? "困难模式" : "简单模式";
-            LeaderRecord record = new LeaderRecord(username, mode,
+            LeaderRecord record = new LeaderRecord(catName, username, mode,
                     statusPanel.getScore(), statusPanel.getTimeUsed());
             leaderBoard.addRecord(record);
         });
@@ -164,6 +165,7 @@ public class GamePanel extends JPanel {
         return SaveManager.saveGame(
             filePath,
             username,
+            catName,
             currentMode,
             slot,
             statusPanel.getScore(),
@@ -193,6 +195,11 @@ public class GamePanel extends JPanel {
             return false;
         }
         
+        // 读取存档中的猫名字
+        if (data.catName != null && !data.catName.trim().isEmpty()) {
+            this.catName = data.catName;
+        }
+
         boardPanel.restoreFromSave(data.gameBoard);
         
         statusPanel.setScore(data.score);
@@ -227,6 +234,13 @@ public class GamePanel extends JPanel {
      */
     public String getUsername() {
         return username;
+    }
+
+    /**
+     * 获取小猫名字（排行榜/存档显示用）
+     */
+    public String getCatName() {
+        return catName;
     }
 
     /**

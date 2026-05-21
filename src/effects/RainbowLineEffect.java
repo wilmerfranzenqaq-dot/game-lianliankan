@@ -1,5 +1,7 @@
 package effects;
 
+import ui.ThemeColors;
+
 import java.awt.*;
 import java.util.List;
 public class RainbowLineEffect {
@@ -92,8 +94,9 @@ public class RainbowLineEffect {
     }
 
     public static Color hueColor(float t, int alpha){
-        float hue = t * 0.85f;
-        Color hsbColor = Color.getHSBColor(hue, 1.0f, 1.0f);
+        // 金→橙窄色谱，hue 0.08-0.12，饱和度降低以融入深木背景
+        float hue = 0.08f + t * 0.04f;
+        Color hsbColor = Color.getHSBColor(hue, 0.7f, 0.9f);
         return new Color(hsbColor.getRed(), hsbColor.getGreen(), hsbColor.getBlue(), alpha);
     }
 }

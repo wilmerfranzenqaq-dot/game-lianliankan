@@ -56,11 +56,12 @@ public class GameFrame extends JFrame {
     /**
      * 登录成功后调用 — 创建游戏页面并切换过去
      * @param username   玩家账号名
+     * @param catName    小猫名字
      * @param isHardMode 是否困难模式
      */
-    public void startGame(String username, boolean isHardMode) {
+    public void startGame(String username, String catName, boolean isHardMode) {
         if (!gameAdded) {
-            add(new GamePanel(isHardMode, leaderBoard, username), "game");
+            add(new GamePanel(isHardMode, leaderBoard, username, catName), "game");
             gameAdded = true;
         }
         showPage("game");

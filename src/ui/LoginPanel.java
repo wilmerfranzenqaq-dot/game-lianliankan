@@ -91,7 +91,23 @@ public class LoginPanel extends JPanel {
         add(passwordField);
 
         // ── 小猫名字输入框 ──
-        catNameField = new JTextField("Mimi");
+        catNameField = new JTextField();
+        catNameField.setText("给小猫取个名字");
+        catNameField.setForeground(new Color(0x9a9080));
+        catNameField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent e) {
+                if (catNameField.getText().equals("给小猫取个名字")) {
+                    catNameField.setText("");
+                    catNameField.setForeground(new Color(0x3a3530));
+                }
+            }
+            public void focusLost(java.awt.event.FocusEvent e) {
+                if (catNameField.getText().isEmpty()) {
+                    catNameField.setText("给小猫取个名字");
+                    catNameField.setForeground(new Color(0x9a9080));
+                }
+            }
+        });
         catNameField.setSize(170, 32);
         catNameField.setLocation(110, 180);
         catNameField.setOpaque(true);
@@ -118,8 +134,12 @@ public class LoginPanel extends JPanel {
                         JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
                         null, options, options[0]);
                 boolean isHardMode = (choice == 1);
+                String catName = catNameField.getText();
+                if (catName.equals("给小猫取个名字") || catName.trim().isEmpty()) {
+                    catName = "Mimi";
+                }
                 MusicManager.play("game");
-                parent.startGame(username, isHardMode);
+                parent.startGame(username, catName, isHardMode);
             } else {
                 JOptionPane.showMessageDialog(this, "账号或密码错误！");
             }

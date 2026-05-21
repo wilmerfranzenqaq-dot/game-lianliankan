@@ -1,5 +1,6 @@
 package ui;
 import utils.MusicManager;
+import ui.ThemeColors;
 
 import javax.swing.*;
 import java.awt.*;
@@ -188,9 +189,9 @@ public class ControlPanel extends JPanel {
 
         // HINT
         JPanel hintPanel = createItemButtonWithLabel(
-            hintButton = new RoundedButton("HINT", 0x4a3d2e),
+            hintButton = new RoundedButton("HINT", ThemeColors.ITEM_HINT.darker().getRGB() & 0xFFFFFF),
             hintCountLabel = new JLabel("剩余: 3", SwingConstants.CENTER),
-            new Color(0xd4a017)
+            ThemeColors.ITEM_HINT
         );
         hintPanel.setBounds(itemX, itemY, itemBtnWidth + 20, itemBtnHeight + 22);
         add(hintPanel);
@@ -198,9 +199,9 @@ public class ControlPanel extends JPanel {
 
         // SHUFFLE
         JPanel shufflePanel = createItemButtonWithLabel(
-            shuffleButton = new RoundedButton("SHUFFLE", 0x4a3d2e),
+            shuffleButton = new RoundedButton("SHUFFLE", ThemeColors.ITEM_SHUFFLE.darker().getRGB() & 0xFFFFFF),
             shuffleCountLabel = new JLabel("剩余: 3", SwingConstants.CENTER),
-            new Color(0x6b8e23)
+            ThemeColors.ITEM_SHUFFLE
         );
         shufflePanel.setBounds(itemX + (itemBtnWidth + 20) + itemGap, itemY, itemBtnWidth + 20, itemBtnHeight + 22);
         add(shufflePanel);
@@ -208,9 +209,9 @@ public class ControlPanel extends JPanel {
 
         // BOMB
         JPanel bombPanel = createItemButtonWithLabel(
-            bombButton = new RoundedButton("BOMB", 0x4a3d2e),
+            bombButton = new RoundedButton("BOMB", ThemeColors.ITEM_BOMB.darker().getRGB() & 0xFFFFFF),
             bombCountLabel = new JLabel("剩余: 2", SwingConstants.CENTER),
-            new Color(0xb22222)
+            ThemeColors.ITEM_BOMB
         );
         bombPanel.setBounds(itemX + 2 * ((itemBtnWidth + 20) + itemGap), itemY, itemBtnWidth + 20, itemBtnHeight + 22);
         add(bombPanel);
@@ -218,9 +219,9 @@ public class ControlPanel extends JPanel {
 
         // FREEZE
         JPanel freezePanel = createItemButtonWithLabel(
-            freezeTimeButton = new RoundedButton("FREEZE", 0x4a3d2e),
+            freezeTimeButton = new RoundedButton("FREEZE", ThemeColors.ITEM_FREEZE.darker().getRGB() & 0xFFFFFF),
             freezeTimeCountLabel = new JLabel("剩余: 2", SwingConstants.CENTER),
-            new Color(0x4682b4)
+            ThemeColors.ITEM_FREEZE
         );
         freezePanel.setBounds(itemX + 3 * ((itemBtnWidth + 20) + itemGap), itemY, itemBtnWidth + 20, itemBtnHeight + 22);
         add(freezePanel);
@@ -231,9 +232,7 @@ public class ControlPanel extends JPanel {
     // 辅助：创建道具按钮+标签组合
     // ════════════════════════════════════════════════════
 
-    /**
-     * 创建一个垂直布局的 JPanel，上方是按钮，下方是剩余次数标签
-     */
+
     private JPanel createItemButtonWithLabel(JButton btn, JLabel label, Color labelColor) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
@@ -254,7 +253,6 @@ public class ControlPanel extends JPanel {
     // 工具
     // ════════════════════════════════════════════════════
 
-    /** 创建统一样式的按钮（圆角、手型光标） */
     private JButton createStyledButton(String text, Color bg, Color fg) {
         RoundedButton btn = new RoundedButton(text, bg.getRGB() & 0xFFFFFF);
         btn.setFont(new Font("Arial", Font.BOLD, 12));

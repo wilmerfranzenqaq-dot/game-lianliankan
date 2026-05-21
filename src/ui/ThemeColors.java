@@ -43,6 +43,26 @@ public final class ThemeColors {
     public static final Font FONT_CAPTION = new Font("Microsoft YaHei", Font.PLAIN, 11);
     public static final Font FONT_NUM   = new Font("Arial", Font.BOLD, 28); // 计时/分数数字
 
+    // ── 道具色 ──
+    /** HINT 道具 */
+    public static final Color ITEM_HINT    = new Color(0xc9a96e); // 金
+    /** SHUFFLE 道具 */
+    public static final Color ITEM_SHUFFLE = new Color(0x7b5ea7); // 灰紫
+    /** BOMB 道具 */
+    public static final Color ITEM_BOMB    = new Color(0x9e3a3a); // 暗砖红
+    /** FREEZE 道具 */
+    public static final Color ITEM_FREEZE  = new Color(0x5a7a8a); // 灰蓝
+
+    // ── 效果色 ──
+    /** 消除碎片主色（金色系） */
+    public static final Color FX_SHATTER  = new Color(0xe8c87a);
+    /** 消除碎片高光 */
+    public static final Color FX_HIGHLIGHT = new Color(0xf5e6c8);
+    /** 彩虹线终点色（暖橙） */
+    public static final Color FX_LINE_END  = new Color(0xd4944e);
+    /** COMBO 浮动文字色 */
+    public static final Color FX_COMBO     = new Color(0xffaa00);
+
     // ── 间距 & 圆角 ──
     public static final int RADIUS_BTN   = 8;   // 按钮圆角
     public static final int RADIUS_CARD  = 12;  // 卡片圆角
