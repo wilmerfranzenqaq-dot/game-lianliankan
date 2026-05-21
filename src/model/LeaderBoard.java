@@ -12,7 +12,7 @@ public class LeaderBoard {
 
     /** 排行榜文件路径（项目根目录下的 leaderboard.dat） */
     public static final String FILE_NAME = System.getProperty("user.dir") + File.separator + "leaderboard.dat";
-    /** 每模式取前几名 */
+    /** 每模式取前几名（仅 topRecords 用） */
     public static final int TOP_N = 5;
 
     // ── 数据 ──
@@ -33,6 +33,24 @@ public class LeaderBoard {
     }
 
     // ── 查询 ──
+
+    /**
+     * 获取指定模式的所有记录（已排序）
+     * 排序规则：分数降序 → 用时升序
+     */
+    public List<LeaderRecord> getAllRecords(String mode) {
+        List<LeaderRecord> modeRecords = new ArrayList<>();
+        for (LeaderRecord r : records) {
+            if (r.mode.equals(mode)) {
+                modeRecords.add(r);
+            }
+        }
+        Collections.sort(modeRecords, (a, b) -> {
+            if (b.score != a.score) return b.score - a.score;
+            return a.timeUsed - b.timeUsed;
+        });
+        return modeRecords;
+    }
 
     /**
      * 获取指定模式的前 TOP_N 名

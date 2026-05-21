@@ -4,7 +4,6 @@ import model.LeaderBoard;
 import model.LeaderRecord;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
@@ -13,11 +12,11 @@ import java.awt.*;
 import java.util.List;
 
 /**
- * 排行榜弹窗 — 分屏展示简单/困难两种模式的前 5 名
+ * 排行榜弹窗 — 分屏展示简单/困难两种模式的所有记录（可滚动）
  *
- * 左表：简单模式 TOP 5
- * 右表：困难模式 TOP 5
- * 字段：排名 #、玩家（显示猫名字，tooltip 指定账号名）、分数、用时（MM:SS）
+ * 左表：简单模式
+ * 右表：困难模式
+ * 字段：排名 #、玩家（显示猫名字，tooltip 显示账号名）、分数、用时（MM:SS）
  */
 public class LeaderBoardPanel extends JDialog {
 
@@ -33,7 +32,7 @@ public class LeaderBoardPanel extends JDialog {
         getContentPane().setBackground(ThemeColors.CANVAS);
 
         // ── 标题 ──
-        JLabel titleLabel = new JLabel("排行榜 TOP 5", SwingConstants.CENTER);
+        JLabel titleLabel = new JLabel("排行榜", SwingConstants.CENTER);
         titleLabel.setFont(ThemeColors.FONT_TITLE);
         titleLabel.setForeground(ThemeColors.PRIMARY);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(ThemeColors.PAD_CARD, 0, 0, 0));
@@ -45,8 +44,8 @@ public class LeaderBoardPanel extends JDialog {
         tablesPanel.setBorder(BorderFactory.createEmptyBorder(
             ThemeColors.PAD_CARD, ThemeColors.PAD_CARD,
             ThemeColors.PAD_SECTION, ThemeColors.PAD_CARD));
-        tablesPanel.add(createTablePanel("简单模式", leaderBoard.getTopRecords("简单模式")));
-        tablesPanel.add(createTablePanel("困难模式", leaderBoard.getTopRecords("困难模式")));
+        tablesPanel.add(createTablePanel("简单模式", leaderBoard.getAllRecords("简单模式")));
+        tablesPanel.add(createTablePanel("困难模式", leaderBoard.getAllRecords("困难模式")));
         add(tablesPanel, BorderLayout.CENTER);
 
         // ── 关闭按钮 ──
@@ -80,22 +79,11 @@ public class LeaderBoardPanel extends JDialog {
     }
 
     /**
-     * 创建单张排行榜表格面板
+     * 创建单张排行榜表格面板（可滚动）
      */
     private JPanel createTablePanel(String title, List<LeaderRecord> records) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(ThemeColors.CANVAS);
-
-        // 自定义标题边框
-        TitledBorder tb = BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(ThemeColors.PRIMARY),
-            title,
-            TitledBorder.DEFAULT_JUSTIFICATION,
-            TitledBorder.DEFAULT_POSITION,
-            ThemeColors.FONT_H2,
-            ThemeColors.PRIMARY);
-        panel.setBorder(BorderFactory.createCompoundBorder(tb,
-            BorderFactory.createEmptyBorder(8, 8, 8, 8)));
 
         String[] columns = {"#", "玩家", "分数", "用时"};
         DefaultTableModel model = new DefaultTableModel(columns, 0) {
@@ -146,7 +134,6 @@ public class LeaderBoardPanel extends JDialog {
                     setBackground(ThemeColors.PRIMARY);
                     setForeground(ThemeColors.TEXT_ON_GOLD);
                 }
-                // 从 records 取用户名作为 tooltip
                 if (row < records.size()) {
                     setToolTipText(records.get(row).userName);
                 }
@@ -156,7 +143,7 @@ public class LeaderBoardPanel extends JDialog {
 
         // 其他列居中
         for (int i = 0; i < table.getColumnCount(); i++) {
-            if (i == 1) continue; // 玩家列上面已经单独设了
+            if (i == 1) continue;
             table.getColumnModel().getColumn(i).setCellRenderer(new DefaultTableCellRenderer() {
                 @Override
                 public Component getTableCellRendererComponent(JTable tbl, Object value,
@@ -181,6 +168,18 @@ public class LeaderBoardPanel extends JDialog {
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getViewport().setBackground(ThemeColors.SURFACE);
         panel.add(scrollPane, BorderLayout.CENTER);
+
+        // 加个小标题
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(ThemeColors.PRIMARY),
+                title,
+                javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION,
+                javax.swing.border.TitledBorder.DEFAULT_POSITION,
+                ThemeColors.FONT_H2,
+                ThemeColors.PRIMARY),
+            BorderFactory.createEmptyBorder(4, 4, 4, 4)));
+
         return panel;
     }
 }
