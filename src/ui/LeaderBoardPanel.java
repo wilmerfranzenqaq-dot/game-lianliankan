@@ -85,7 +85,7 @@ public class LeaderBoardPanel extends JDialog {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(ThemeColors.CANVAS);
 
-        String[] columns = {"#", "玩家", "分数", "用时"};
+        String[] columns = {"#", "猫咪", "分数", "用时"};
         DefaultTableModel model = new DefaultTableModel(columns, 0) {
             public boolean isCellEditable(int row, int col) {
                 return false;
@@ -97,7 +97,9 @@ public class LeaderBoardPanel extends JDialog {
         } else {
             for (int i = 0; i < records.size(); i++) {
                 LeaderRecord r = records.get(i);
-                model.addRow(new Object[]{i + 1, r.catName, r.score, r.getTimeFormatted()});
+                // 有猫名就用猫名，没有就显示用户名
+                String displayName = (r.catName != null && !r.catName.isEmpty()) ? r.catName : r.userName;
+                model.addRow(new Object[]{i + 1, displayName, r.score, r.getTimeFormatted()});
             }
         }
 
@@ -119,7 +121,7 @@ public class LeaderBoardPanel extends JDialog {
         header.setPreferredSize(new Dimension(0, 32));
         header.setBorder(BorderFactory.createEmptyBorder());
 
-        // 自定义渲染器：玩家列加 tooltip 显示用户名
+        // 自定义渲染器：猫咪列显示猫名/用户名 + tooltip
         table.getColumnModel().getColumn(1).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable tbl, Object value,
@@ -135,7 +137,13 @@ public class LeaderBoardPanel extends JDialog {
                     setForeground(ThemeColors.TEXT_ON_GOLD);
                 }
                 if (row < records.size()) {
-                    setToolTipText(records.get(row).userName);
+                    LeaderRecord rec = records.get(row);
+                    // tooltip 显示：猫名 → 用户名
+                    if (rec.catName != null && !rec.catName.isEmpty()) {
+                        setToolTipText(rec.userName);
+                    } else {
+                        setToolTipText(null);
+                    }
                 }
                 return c;
             }

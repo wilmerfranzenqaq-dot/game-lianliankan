@@ -171,6 +171,11 @@ public class LoginPanel extends JPanel {
             if (catName.equals("给小猫取个名字") || catName.trim().isEmpty()) {
                 catName = "Mimi";
             }
+            // 检测猫名是否已被其他用户使用（排除自己——注册时自己是新用户，不存在）
+            if (isCatNameUsedByOthers(catName, "")) {
+                JOptionPane.showMessageDialog(this, "已经有小哈基米叫这个名字了！");
+                return;
+            }
             if (writeUserToFile(username, password, catName)) {
                 JOptionPane.showMessageDialog(this, "注册成功！");
                 accountField.setText("请输入账号");
@@ -237,6 +242,32 @@ public class LoginPanel extends JPanel {
             }
         } catch (IOException e) {
             // 文件不存在或无法读取 → 验证失败
+        }
+        return false;
+    }
+
+    /**
+     * 检测猫名是否已被其他用户使用
+     * @param catName 要检测的猫名
+     * @param excludeUser 排除的用户名（自己的旧名），空串代表不排除
+     * @return true 已被占用
+     */
+    private static boolean isCatNameUsedByOthers(String catName, String excludeUser) {
+        if (catName == null || catName.trim().isEmpty()) return false;
+        try (BufferedReader reader = new BufferedReader(new FileReader(USER_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length >= 5) {
+                    String user = parts[0].trim();
+                    String existingCat = parts[4].trim();
+                    if (existingCat.equals(catName.trim()) && !user.equals(excludeUser)) {
+                        return true;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            // 文件不存在 → 无占用
         }
         return false;
     }
