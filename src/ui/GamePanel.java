@@ -71,7 +71,7 @@ public class GamePanel extends JPanel {
         // 重新开始：重新生成棋盘 + 重置状态
         controlPanel.setOnRestart(() -> {
             ChessGenerator gen2 = new ChessGenerator();
-            Cell[][] newBoard = isHardMode ? gen2.generateHardBoard() : gen2.generateEasyBoard();
+            Cell[][] newBoard = GamePanel.this.isHardMode ? gen2.generateHardBoard() : gen2.generateEasyBoard();
             int newRow = newBoard.length;
             int newCol = newBoard[0].length;
             boardPanel.setGameBoard(new GameBoard(newRow, newCol, newBoard));
@@ -91,7 +91,7 @@ public class GamePanel extends JPanel {
 
         // 胜利回调 → 记录成绩到排行榜（显示猫名字）
         boardPanel.setOnWinCallback(() -> {
-            String mode = isHardMode ? "困难模式" : "简单模式";
+            String mode = GamePanel.this.isHardMode ? "困难模式" : "简单模式";
             LeaderRecord record = new LeaderRecord(catName, username, mode,
                     statusPanel.getScore(), statusPanel.getTimeUsed());
             leaderBoard.addRecord(record);
@@ -139,6 +139,7 @@ public class GamePanel extends JPanel {
             dlg.setOnSkinChange(dir -> controlPanel.currentSkinDir = dir);
             dlg.setVisible(true);
             if (dlg.isRestartRequested()) {
+                GamePanel.this.isHardMode = dlg.isHardMode();  // ← 关键：更新模式
                 controlPanel.currentCoreSize = dlg.getSelectedCoreSize();
                 MusicManager.setSfxVolume(dlg.getSfxVolume() / 100f);
                 controlPanel.currentSkinDir = dlg.getSelectedSkinDir();
