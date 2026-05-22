@@ -187,7 +187,7 @@ public class LoginPanel extends JPanel {
 
         RoundedButton guestBtn = new RoundedButton("游客模式", 0x9a7a5a);
         guestBtn.setForeground(Color.WHITE);
-        guestBtn.setBounds(90, 180, 170, 32);
+        guestBtn.setBounds(260, 225, 120, 32);
         add(guestBtn);
 
         guestBtn.addActionListener(e -> {

@@ -37,12 +37,12 @@ public class EffectManager {
         int x2 = pos2.getCol() * cellWidth + cellWidth / 2;
         int y2 = pos2.getRow() * cellHeight + cellHeight / 2;
         
-        int centerX = (x1 + x2) / 2 + 180;
-        int centerY = (y1 + y2) / 2 + 160;
+        int centerX = (x1 + x2) / 2;
+        int centerY = (y1 + y2) / 2;
         
         Color color = getColorByIconIndex(iconIndex);
 
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 20; i++) {
             ShardParticle shard = new ShardParticle();
             double angle = Math.random() * Math.PI * 2;
             double speed = Math.random() * 8 + 2;

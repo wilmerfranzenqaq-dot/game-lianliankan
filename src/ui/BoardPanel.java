@@ -528,58 +528,59 @@ public class BoardPanel extends JPanel {
             return;
         }
 
-        // 图标相同且可连接 → 消除动画
+        // 图标相同且可连接 → 立即消除
         if (Utils.canLinkAB(gameBoard, firstSelected, secondSelected)) {
             secondCell.setChosen(true);
-            repaint();
-            animating = true;
 
             MusicManager.playSfx("click");
 
             List<Position> path = Utils.findPath(gameBoard, firstSelected, secondSelected);
             showLine(path);
 
-            // 200ms 后消除
-            Timer timer = new Timer(200, e -> {
-                // 触发破碎特效（从两个棋子中点爆发）
-                effectManager.createShatterEffect(firstSelected, secondSelected, cellWidth, cellHeight, firstCell.getIconIndex());
+            // 瞬间消除（不阻塞输入）
+            animating = true;
+            effectManager.createShatterEffect(firstSelected, secondSelected, cellWidth, cellHeight, firstCell.getIconIndex());
 
-                firstCell.setEmpty(true);
-                secondCell.setEmpty(true);
-                statusPanel.addScore(10);
+            firstCell.setEmpty(true);
+            secondCell.setEmpty(true);
+            statusPanel.addScore(10);
 
-                // COMBO 浮动文字：在消除位置中点显示
-                int cx = (firstSelected.getCol() + secondSelected.getCol()) * cellWidth / 2 + cellWidth / 2;
-                int cy = (firstSelected.getRow() + secondSelected.getRow()) * cellHeight / 2 + cellHeight / 2;
-                String comboMsg = "COMBO x" + statusPanel.getComboCount();
-                if (statusPanel.getComboCount() >= 3) {
-                    comboTexts.add(new ComboText(cx, cy, comboMsg));
+            // COMBO 浮动文字：在消除位置中点显示
+            int cx = (firstSelected.getCol() + secondSelected.getCol()) * cellWidth / 2 + cellWidth / 2;
+            int cy = (firstSelected.getRow() + secondSelected.getRow()) * cellHeight / 2 + cellHeight / 2;
+            if (statusPanel.getComboCount() >= 3) {
+                comboTexts.add(new ComboText(cx, cy, "COMBO x" + statusPanel.getComboCount()));
+            }
+
+            if (onFishFeed != null) onFishFeed.run();
+            refreshPairInfo();
+
+            // 胜利检测
+            if (gameBoard.isAllCleared()) {
+                statusPanel.winGame();
+                if (onWinCallback != null) {
+                    onWinCallback.run();
                 }
+                JOptionPane.showMessageDialog(BoardPanel.this, "你赢了！");
+            }
 
-                if (onFishFeed != null) onFishFeed.run();
-                refreshPairInfo();
+            // 恢复选中状态
+            firstCell.setChosen(false);
+            secondCell.setChosen(false);
+            firstSelected = null;
+            secondSelected = null;
+            animating = false;
 
-                // 胜利检测
-                if (gameBoard.isAllCleared()) {
-                    statusPanel.winGame();
-                    if (onWinCallback != null) {
-                        onWinCallback.run();
-                    }
-                    JOptionPane.showMessageDialog(BoardPanel.this, "你赢了！");
-                }
-
-                // 恢复状态
-                firstCell.setChosen(false);
-                secondCell.setChosen(false);
+            // 连线保留 200ms 后自动消失（不影响操作）
+            Timer lineTimer = new Timer(200, ev -> {
                 lineVisible = false;
                 lineList.clear();
-                firstSelected = null;
-                secondSelected = null;
-                animating = false;
                 repaint();
             });
-            timer.setRepeats(false);
-            timer.start();
+            lineTimer.setRepeats(false);
+            lineTimer.start();
+
+            repaint();
         } else {
             // 不可连接 → 取消选中
             gameBoard.clearAllChosen();
