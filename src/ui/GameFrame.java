@@ -19,6 +19,10 @@ public class GameFrame extends JFrame {
     private CardLayout cardLayout;
     private boolean gameAdded = false;
     private LeaderBoard leaderBoard;
+    JMenuBar menuBar;
+    JMenu gameMenu;
+    JMenu helpMenu;
+    private GamePanel currentGamePanel;
 
     public GameFrame(String title, int contentW, int contentH) {
         super(title);
@@ -41,6 +45,10 @@ public class GameFrame extends JFrame {
         add(new SplashPanel(this), "splash");
         add(new LoginPanel(this), "login");
 
+        // ── 菜单栏 ──
+        createMenuBar();
+        setJMenuBar(menuBar);
+
         showPage("splash");
         setVisible(true);
 
@@ -56,11 +64,13 @@ public class GameFrame extends JFrame {
     /**
      * 登录成功后调用 — 创建游戏页面并切换过去
      * @param username   玩家账号名（null 表示游客）
+     * @param catName    小猫名字
      * @param isHardMode 是否困难模式
      */
-    public void startGame(String username, boolean isHardMode) {
+    public void startGame(String username, String catName, boolean isHardMode) {
         if (!gameAdded) {
-            add(new GamePanel(isHardMode, leaderBoard, username), "game");
+            currentGamePanel = new GamePanel(isHardMode, leaderBoard, username, catName);
+            add(currentGamePanel, "game");
             gameAdded = true;
         }
         showPage("game");
@@ -69,5 +79,65 @@ public class GameFrame extends JFrame {
     /** 切换到指定页面 */
     public void showPage(String name) {
         cardLayout.show(getContentPane(), name);
+    }
+
+    /** 创建菜单栏 */
+    private void createMenuBar() {
+        menuBar = new JMenuBar();
+        menuBar.setBackground(new Color(0x3a3023));
+
+        // ── 游戏菜单 ──
+        gameMenu = new JMenu("游戏");
+        gameMenu.setFont(new Font("Microsoft YaHei", Font.PLAIN, 14));
+        gameMenu.setForeground(new Color(0xe8c87a));
+        gameMenu.setMnemonic('G');
+
+        JMenuItem startItem = new JMenuItem("开始  Space");
+        startItem.setMnemonic('S');
+        startItem.addActionListener(e -> {
+            if (currentGamePanel != null) currentGamePanel.getStartButton().doClick();
+        });
+
+        JMenuItem restartItem = new JMenuItem("重新开始  R");
+        restartItem.setMnemonic('R');
+        restartItem.addActionListener(e -> {
+            if (currentGamePanel != null) currentGamePanel.getRestartButton().doClick();
+        });
+
+        JMenuItem saveItem = new JMenuItem("保存  S");
+        saveItem.setMnemonic('S');
+        saveItem.addActionListener(e -> {
+            if (currentGamePanel != null) currentGamePanel.getSaveButton().doClick();
+        });
+
+        JMenuItem loadItem = new JMenuItem("加载  L");
+        loadItem.setMnemonic('L');
+        loadItem.addActionListener(e -> {
+            if (currentGamePanel != null) currentGamePanel.getLoadButton().doClick();
+        });
+
+        gameMenu.add(startItem);
+        gameMenu.add(restartItem);
+        gameMenu.addSeparator();
+        gameMenu.add(saveItem);
+        gameMenu.add(loadItem);
+
+        // ── 帮助菜单 ──
+        helpMenu = new JMenu("帮助");
+        helpMenu.setFont(new Font("Microsoft YaHei", Font.PLAIN, 14));
+        helpMenu.setForeground(new Color(0xe8c87a));
+        helpMenu.setMnemonic('H');
+
+        JMenuItem aboutItem = new JMenuItem("关于");
+        aboutItem.setMnemonic('A');
+        aboutItem.addActionListener(e ->
+            JOptionPane.showMessageDialog(this,
+                "连连看 v1.1\nJava Swing 实现\nGitHub: yubailing666/game-lianliankan",
+                "关于", JOptionPane.INFORMATION_MESSAGE));
+        helpMenu.add(aboutItem);
+
+        menuBar.add(gameMenu);
+        menuBar.add(Box.createHorizontalGlue());
+        menuBar.add(helpMenu);
     }
 }

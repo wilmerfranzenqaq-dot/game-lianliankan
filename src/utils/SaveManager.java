@@ -27,11 +27,12 @@ public class SaveManager {
         return "save_" + username + "_" + modeStr + "_" + slot + ".dat";
     }
 
-    public static boolean saveGame(String filepath, String username, String mode, int slot,
+    public static boolean saveGame(String filepath, String username, String catName, String mode, int slot,
                                    int score, int remainingSeconds, int elapsedSeconds, int comboCount,
                                    long lastEliminationTime, GameBoard gameBoard) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(filepath))) {
             writer.println(username);
+            writer.println(catName);
             writer.println(mode);
             writer.println(slot);
             writer.println(score);
@@ -74,6 +75,7 @@ public class SaveManager {
             int comboCount = Integer.parseInt(reader.readLine());
             long lastEliminationTime = Long.parseLong(reader.readLine());
             // 新增：读取 totalPairs
+            String catName = reader.readLine();
             int totalPairs = Integer.parseInt(reader.readLine());
             
             String[] dimensions = reader.readLine().split(",");
@@ -95,6 +97,7 @@ public class SaveManager {
             
             SaveData data = new SaveData();
             data.username = username;
+            data.catName = catName;
             data.mode = mode;
             data.slot = slot;
             data.score = score;
@@ -142,6 +145,7 @@ public class SaveManager {
     }
     public static class SaveData{
         public String username;
+        public String catName;
         public String mode;
         public int slot;
         public int score;

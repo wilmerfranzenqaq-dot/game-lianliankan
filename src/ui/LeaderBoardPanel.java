@@ -4,17 +4,19 @@ import model.LeaderBoard;
 import model.LeaderRecord;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+
 import java.awt.*;
 import java.util.List;
 
 /**
- * 排行榜弹窗 — 分屏展示简单/困难两种模式的前 5 名
+ * 排行榜弹窗 — 分屏展示简单/困难两种模式的所有记录（可滚动）
  *
- * 左表：简单模式 TOP 5
- * 右表：困难模式 TOP 5
- * 字段：排名 #、玩家名、分数、用时（MM:SS）
+ * 左表：简单模式
+ * 右表：困难模式
+ * 字段：排名 #、玩家（显示猫名字，tooltip 显示账号名）、分数、用时（MM:SS）
  */
 public class LeaderBoardPanel extends JDialog {
 
@@ -26,46 +28,49 @@ public class LeaderBoardPanel extends JDialog {
 
         setSize(600, 500);
         setLocationRelativeTo(parent);
-        setLayout(new BorderLayout(10, 10));
-        getContentPane().setBackground(new Color(0xf4f0e8));
+        setLayout(new BorderLayout());
+        getContentPane().setBackground(ThemeColors.CANVAS);
 
         // ── 标题 ──
-        JLabel titleLabel = new JLabel("排行榜 TOP 5", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(0x3a3530));
+        JLabel titleLabel = new JLabel("排行榜", SwingConstants.CENTER);
+        titleLabel.setFont(ThemeColors.FONT_TITLE);
+        titleLabel.setForeground(ThemeColors.PRIMARY);
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(ThemeColors.PAD_CARD, 0, 0, 0));
         add(titleLabel, BorderLayout.NORTH);
 
         // ── 双表并排 ──
-        JPanel tablesPanel = new JPanel(new GridLayout(1, 2, 10, 0));
-        tablesPanel.add(createTablePanel("简单模式", leaderBoard.getTopRecords("简单模式")));
-        tablesPanel.add(createTablePanel("困难模式", leaderBoard.getTopRecords("困难模式")));
+        JPanel tablesPanel = new JPanel(new GridLayout(1, 2, ThemeColors.PAD_CARD, 0));
+        tablesPanel.setBackground(ThemeColors.CANVAS);
+        tablesPanel.setBorder(BorderFactory.createEmptyBorder(
+            ThemeColors.PAD_CARD, ThemeColors.PAD_CARD,
+            ThemeColors.PAD_SECTION, ThemeColors.PAD_CARD));
+        tablesPanel.add(createTablePanel("简单模式", leaderBoard.getAllRecords("简单模式")));
+        tablesPanel.add(createTablePanel("困难模式", leaderBoard.getAllRecords("困难模式")));
         add(tablesPanel, BorderLayout.CENTER);
 
         // ── 关闭按钮 ──
-        JButton closeBtn = new JButton("关闭");
-        closeBtn.setFont(new Font("Microsoft YaHei", Font.PLAIN, 16));
-        closeBtn.setBackground(new Color(0xd4a04a));
-        closeBtn.setForeground(Color.WHITE);
-        closeBtn.setFocusPainted(false);
+        RoundedButton closeBtn = new RoundedButton("关闭", 0xd4a04a);
+        closeBtn.setFont(ThemeColors.FONT_BODY);
+        closeBtn.setForeground(ThemeColors.TEXT_ON_GOLD);
+        closeBtn.setPreferredSize(new Dimension(100, 36));
+        closeBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         closeBtn.addActionListener(e -> dispose());
+
         JPanel btnPanel = new JPanel();
+        btnPanel.setBackground(ThemeColors.CANVAS);
+        btnPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, ThemeColors.PAD_CARD, 0));
         btnPanel.add(closeBtn);
         add(btnPanel, BorderLayout.SOUTH);
     }
 
     /**
-     * 创建单张排行榜表格面板
-     * @param title   表格标题（如"简单模式"）
-     * @param records 已排序的前 N 条记录
+     * 创建单张排行榜表格面板（可滚动）
      */
     private JPanel createTablePanel(String title, List<LeaderRecord> records) {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(0xf4f0e8));
-        panel.setBorder(BorderFactory.createTitledBorder(
-            null, title, TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION,
-            new Font("Microsoft YaHei", Font.BOLD, 14), new Color(0x3a3530)));
+        panel.setBackground(ThemeColors.CANVAS);
 
-        String[] columns = {"#", "玩家", "分数", "用时"};
+        String[] columns = {"#", "猫咪", "分数", "用时"};
         DefaultTableModel model = new DefaultTableModel(columns, 0) {
             public boolean isCellEditable(int row, int col) {
                 return false;
@@ -77,21 +82,97 @@ public class LeaderBoardPanel extends JDialog {
         } else {
             for (int i = 0; i < records.size(); i++) {
                 LeaderRecord r = records.get(i);
-                model.addRow(new Object[]{i + 1, r.userName, r.score, r.getTimeFormatted()});
+                // 有猫名就用猫名，没有就显示用户名
+                String displayName = (r.catName != null && !r.catName.isEmpty()) ? r.catName : r.userName;
+                model.addRow(new Object[]{i + 1, displayName, r.score, r.getTimeFormatted()});
             }
         }
 
         JTable table = new JTable(model);
-        table.setFont(new Font("Microsoft YaHei", Font.PLAIN, 14));
-        table.setRowHeight(28);
-        table.setForeground(new Color(0x3a3530));
-        table.setBackground(new Color(0xf4f0e8));
-        table.getTableHeader().setFont(new Font("Microsoft YaHei", Font.BOLD, 14));
-        table.getTableHeader().setForeground(new Color(0x3a3530));
-        table.getTableHeader().setBackground(new Color(0xece6dc));
+        table.setFont(ThemeColors.FONT_BODY);
+        table.setRowHeight(40);
+        table.setForeground(ThemeColors.TEXT);
+        table.setBackground(ThemeColors.SURFACE);
+        table.setShowGrid(false);
+        table.setIntercellSpacing(new Dimension(0, 0));
+        table.setSelectionBackground(ThemeColors.PRIMARY);
+        table.setSelectionForeground(ThemeColors.TEXT_ON_GOLD);
+        table.setFocusable(false);
+
+        JTableHeader header = table.getTableHeader();
+        header.setFont(ThemeColors.FONT_H2);
+        header.setForeground(ThemeColors.PRIMARY);
+        header.setBackground(ThemeColors.TEXT_ON_GOLD);
+        header.setPreferredSize(new Dimension(0, 32));
+        header.setBorder(BorderFactory.createEmptyBorder());
+
+        // 自定义渲染器：猫咪列显示猫名/用户名 + tooltip
+        table.getColumnModel().getColumn(1).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable tbl, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int col) {
+                Component c = super.getTableCellRendererComponent(tbl, value,
+                        isSelected, hasFocus, row, col);
+                setHorizontalAlignment(SwingConstants.CENTER);
+                if (!isSelected) {
+                    setBackground(row % 2 == 0 ? ThemeColors.SURFACE : ThemeColors.SURFACE_2);
+                    setForeground(ThemeColors.TEXT);
+                } else {
+                    setBackground(ThemeColors.PRIMARY);
+                    setForeground(ThemeColors.TEXT_ON_GOLD);
+                }
+                if (row < records.size()) {
+                    LeaderRecord rec = records.get(row);
+                    // tooltip 显示：猫名 → 用户名
+                    if (rec.catName != null && !rec.catName.isEmpty()) {
+                        setToolTipText(rec.userName);
+                    } else {
+                        setToolTipText(null);
+                    }
+                }
+                return c;
+            }
+        });
+
+        // 其他列居中
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            if (i == 1) continue;
+            table.getColumnModel().getColumn(i).setCellRenderer(new DefaultTableCellRenderer() {
+                @Override
+                public Component getTableCellRendererComponent(JTable tbl, Object value,
+                        boolean isSelected, boolean hasFocus, int row, int col) {
+                    Component c = super.getTableCellRendererComponent(tbl, value,
+                            isSelected, hasFocus, row, col);
+                    setHorizontalAlignment(SwingConstants.CENTER);
+                    setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+                    if (!isSelected) {
+                        setBackground(row % 2 == 0 ? ThemeColors.SURFACE : ThemeColors.SURFACE_2);
+                        setForeground(ThemeColors.TEXT);
+                    } else {
+                        setBackground(ThemeColors.PRIMARY);
+                        setForeground(ThemeColors.TEXT_ON_GOLD);
+                    }
+                    return c;
+                }
+            });
+        }
 
         JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(ThemeColors.SURFACE);
         panel.add(scrollPane, BorderLayout.CENTER);
+
+        // 加个小标题
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(ThemeColors.PRIMARY),
+                title,
+                javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION,
+                javax.swing.border.TitledBorder.DEFAULT_POSITION,
+                ThemeColors.FONT_H2,
+                ThemeColors.PRIMARY),
+            BorderFactory.createEmptyBorder(4, 4, 4, 4)));
+
         return panel;
     }
 }

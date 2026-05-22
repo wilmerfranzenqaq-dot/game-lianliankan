@@ -3,6 +3,7 @@ package ui;
 import effects.EffectManager;
 import model.*;
 import model.Rectangle;
+import utils.MusicManager;
 import utils.Utils;
 
 import javax.swing.*;
@@ -12,7 +13,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -26,6 +27,15 @@ import java.util.List;
  *   - 胜利检测与回调触发
  */
 public class BoardPanel extends JPanel {
+
+    // ── 光标模式枚举 ──
+    public enum CursorMode {
+        NORMAL,
+        HINT,
+        BOMB,
+        SHUFFLE,
+        FREEZE
+    }
 
     // ── 布局参数 ──
     int offSetX;
@@ -42,10 +52,12 @@ public class BoardPanel extends JPanel {
 
     // ── 图片资源 ──
     List<Image> imageList = new ArrayList<>();
+    private String skinDir = "resource";
     Image[] scaledImages;
 
     // ── 游戏状态 ──
     StatusPanel statusPanel;
+    ControlPanel controlPanel;          // 引用 ControlPanel 以便更新道具计数
     boolean started;                    // 是否已开始（START 按钮控制）
     boolean animating;                  // 是否正在播放消除动画
     Position firstSelected = null;      // 第一次点击选中的位置
@@ -53,7 +65,7 @@ public class BoardPanel extends JPanel {
     ItemManager itemManager;
     Position[] hintPositions = null;
     long hintShowTime = 0;
-    boolean bombMode = false;
+    CursorMode currentCursorMode = CursorMode.NORMAL;
 
     // ── 连接线绘制 ──
     List<Line> lineList = new ArrayList<>();
@@ -66,6 +78,9 @@ public class BoardPanel extends JPanel {
     // ── 特效系统 ──
     private EffectManager effectManager;
 
+    // ── COMBO 浮动文字 ──
+    private List<ComboText> comboTexts = new ArrayList<>();
+
     // ════════════════════════════════════════════════════
     // 构造与初始化
     // ════════════════════════════════════════════════════
@@ -77,7 +92,7 @@ public class BoardPanel extends JPanel {
         this.offSetY = offSetY;
 
         setBounds(offSetX, offSetY, width, height);
-        setBackground(new Color(0x7a6a52));  // 比 canvas 稍亮，作为棋盘表面
+        setBackground(new Color(0x6b5b45));
         setOpaque(true);
 
         this.totalRow = gameBoard.getRowCnt();
@@ -88,35 +103,13 @@ public class BoardPanel extends JPanel {
         this.itemManager = new ItemManager(gameBoard);
 
         setPreferredSize(new Dimension(this.width, this.height));
-        // 格子尺寸按面板大小计算，整数除法余数自然居中
         this.cellWidth = this.width / totalCol;
         this.cellHeight = this.height / totalRow;
-        this.offSetX = (this.width - this.cellWidth * totalCol) / 2;
-        this.offSetY = (this.height - this.cellHeight * totalRow) / 2;
 
         // ── 加载棋子图片资源 ──
-        File dir = new File("resource");
-        if (!dir.exists()) {
-            dir = new File("D:" + File.separator + "game-lianliankan" + File.separator + "resource");
-        }
-        File[] files = dir.listFiles();
-        if (files != null) {
-            // 按文件名中的数字升序排序（0.png < 2.png < 10.png）
-            // 非数字文件（background.png）排在最后
-            Arrays.sort(files, (a, b) -> {
-                int na = parseNumericPrefix(a.getName());
-                int nb = parseNumericPrefix(b.getName());
-                return Integer.compare(na, nb);
-            });
-            for (File file : files) {
-                if (file.getName().endsWith(".png")) {
-                    ImageIcon icon = new ImageIcon(file.getPath());
-                    imageList.add(icon.getImage());
-                }
-            }
-        }
+        loadImages();
 
-        // 预缩放到格子大小（同步缩放，消除每帧缩放开销 + 懒加载空白 bug）
+        // 预缩放到格子大小        // 预缩放到格子大小（同步缩放，消除每帧缩放开销 + 懒加载空白 bug）
         scaledImages = new Image[imageList.size()];
         for (int i = 0; i < imageList.size(); i++) {
             BufferedImage bi = new BufferedImage(cellWidth, cellHeight, BufferedImage.TYPE_INT_ARGB);
@@ -131,7 +124,7 @@ public class BoardPanel extends JPanel {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (bombMode) {
+                if (currentCursorMode == CursorMode.BOMB) {
                     handleBombClick(e.getX(), e.getY());
                 } else {
                     handleClick(e.getX(), e.getY());
@@ -143,11 +136,28 @@ public class BoardPanel extends JPanel {
         effectManager = new EffectManager();
         Timer effectTimer = new Timer(16, e -> {
             effectManager.update();
-            if (effectManager.hasActiveEffects()) {
+
+            // 更新 COMBO 浮动文字
+            Iterator<ComboText> iter = comboTexts.iterator();
+            while (iter.hasNext()) {
+                ComboText ct = iter.next();
+                ct.update();
+                if (ct.life <= 0) iter.remove();
+            }
+
+            if (effectManager.hasActiveEffects() || !comboTexts.isEmpty()) {
                 repaint();
             }
         });
         effectTimer.start();
+    }
+
+    // ════════════════════════════════════════════════════
+    // ControlPanel 引用设置
+    // ════════════════════════════════════════════════════
+
+    public void setControlPanel(ControlPanel controlPanel) {
+        this.controlPanel = controlPanel;
     }
 
     // ════════════════════════════════════════════════════
@@ -183,6 +193,8 @@ public class BoardPanel extends JPanel {
         this.secondSelected = null;
         this.lineList.clear();
         effectManager.clearAll();
+        currentCursorMode = CursorMode.NORMAL;
+        setCursor(Cursor.getDefaultCursor());
         
         // 重置道具管理器（恢复初始数量）
         this.itemManager = new ItemManager(gameBoard);
@@ -193,7 +205,7 @@ public class BoardPanel extends JPanel {
 
 
     /**
-     * 刷新 StatusPanel 上的配对进度信息
+     * 刷新 StatusPanel 上的配对进度信息，同时更新道具计数
      */
     public void refreshPairInfo() {
         int totalPairs = gameBoard.getTotalPairs();
@@ -203,17 +215,58 @@ public class BoardPanel extends JPanel {
         updateItemDisplay();
     }
 
+    /**
+     * 通过 ControlPanel 的 setItemCounts 更新道具计数显示
+     */
+    // ── COMBO 浮动文字内部类 ──
+    static class ComboText {
+        int x, y;
+        String text;
+        float life = 1.0f; // 1.0 → 0.0
+        int vy = -2;       // 上浮
+
+        ComboText(int x, int y, String text) {
+            this.x = x;
+            this.y = y;
+            this.text = text;
+        }
+
+        void update() {
+            y += vy;
+            life -= 0.02f;
+        }
+
+        void draw(Graphics2D g) {
+            if (life <= 0) return;
+            g.setFont(new Font("Microsoft YaHei", Font.BOLD, 18));
+            g.setColor(new Color(
+                    ThemeColors.FX_COMBO.getRed(),
+                    ThemeColors.FX_COMBO.getGreen(),
+                    ThemeColors.FX_COMBO.getBlue(),
+                    (int)(life * 255)
+            ));
+            FontMetrics fm = g.getFontMetrics();
+            int tw = fm.stringWidth(text);
+            g.drawString(text, x - tw / 2, y);
+        }
+    }
+
     private void updateItemDisplay() {
-        statusPanel.updateItemDisplay(
-                itemManager.getHintCount(),
-                itemManager.getShuffleCount(),
-                itemManager.getBombCount(),
-                itemManager.getFreezeTimeCount()
-        );
+        if (controlPanel != null) {
+            controlPanel.setItemCounts(
+                    itemManager.getHintCount(),
+                    itemManager.getShuffleCount(),
+                    itemManager.getBombCount(),
+                    itemManager.getFreezeTimeCount()
+            );
+        }
     }
 
     public void useHint() {
         if (!started || animating) return;
+
+        currentCursorMode = CursorMode.HINT;
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         Position[] result = itemManager.useHint();
         if (result != null) {
@@ -223,18 +276,25 @@ public class BoardPanel extends JPanel {
 
             Timer timer = new Timer(1500, e -> {
                 hintPositions = null;
+                currentCursorMode = CursorMode.NORMAL;
+                setCursor(Cursor.getDefaultCursor());
                 repaint();
             });
             timer.setRepeats(false);
             timer.start();
         } else {
             JOptionPane.showMessageDialog(this, "没有可消除的配对！");
+            currentCursorMode = CursorMode.NORMAL;
+            setCursor(Cursor.getDefaultCursor());
         }
         updateItemDisplay();
     }
 
     public void useShuffle() {
         if (!started || animating) return;
+
+        currentCursorMode = CursorMode.SHUFFLE;
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         if (itemManager.useShuffle()) {
             gameBoard.clearAllChosen();
@@ -244,6 +304,9 @@ public class BoardPanel extends JPanel {
         } else {
             JOptionPane.showMessageDialog(this, "没有重排道具了！");
         }
+
+        currentCursorMode = CursorMode.NORMAL;
+        setCursor(Cursor.getDefaultCursor());
         updateItemDisplay();
     }
 
@@ -255,20 +318,26 @@ public class BoardPanel extends JPanel {
             return;
         }
 
-        bombMode = true;
-        JOptionPane.showMessageDialog(this, "点击要消除的棋子");
+        currentCursorMode = CursorMode.BOMB;
+        setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
+        repaint();
     }
 
     private void handleBombClick(int x, int y) {
         Position pos = getPositionByPoint(x, y);
         if (pos == null) {
-            bombMode = false;
+            // 点击空白区域退出 bombMode
+            currentCursorMode = CursorMode.NORMAL;
+            setCursor(Cursor.getDefaultCursor());
+            repaint();
             return;
         }
 
         Cell cell = gameBoard.getCell(pos.getRow(), pos.getCol());
         if (cell.isEmpty()) {
-            bombMode = false;
+            currentCursorMode = CursorMode.NORMAL;
+            setCursor(Cursor.getDefaultCursor());
+            repaint();
             return;
         }
 
@@ -295,20 +364,26 @@ public class BoardPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "无法消除该棋子！");
         }
 
-        bombMode = false;
+        currentCursorMode = CursorMode.NORMAL;
+        setCursor(Cursor.getDefaultCursor());
         repaint();
     }
 
     public void useFreezeTime() {
         if (!started || animating) return;
 
+        currentCursorMode = CursorMode.FREEZE;
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
         int freezeSeconds = itemManager.useFreezeTime();
         if (freezeSeconds > 0) {
             statusPanel.addFreezeTime(freezeSeconds);
-            JOptionPane.showMessageDialog(this, "时间已冻结 " + freezeSeconds + " 秒！");
         } else {
             JOptionPane.showMessageDialog(this, "没有冻结道具了！");
         }
+
+        currentCursorMode = CursorMode.NORMAL;
+        setCursor(Cursor.getDefaultCursor());
         updateItemDisplay();
     }
 
@@ -320,8 +395,8 @@ public class BoardPanel extends JPanel {
      * 像素坐标 → 棋盘行列坐标（超出边界返回 null）
      */
     public Position getPositionByPoint(int x, int y) {
-        int col = (x - offSetX) / cellWidth;
-        int row = (y - offSetY) / cellHeight;
+        int col = x / cellWidth;
+        int row = y / cellHeight;
         if (row < 0 || row >= totalRow || col < 0 || col >= totalCol) {
             return null;
         }
@@ -332,8 +407,8 @@ public class BoardPanel extends JPanel {
      * 获取某个棋盘格子在屏幕上的像素矩形
      */
     public Rectangle getRectangle(Position position) {
-        int x = offSetX + position.getCol() * cellWidth;
-        int y = offSetY + position.getRow() * cellHeight;
+        int x = position.getCol() * cellWidth;
+        int y = position.getRow() * cellHeight;
         return new Rectangle(x, y, cellWidth, cellHeight);
     }
 
@@ -361,6 +436,40 @@ public class BoardPanel extends JPanel {
     }
 
     // ════════════════════════════════════════════════════
+    private void loadImages() {
+        File dir = new File(skinDir);
+        if (!dir.exists()) {
+            dir = new File("D:" + File.separator + "game-lianliankan" + File.separator + skinDir);
+        }
+        imageList.clear();
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                String fname = file.getName();
+                if (fname.endsWith(".png")) {
+                    ImageIcon icon = new ImageIcon(file.getPath());
+                    imageList.add(icon.getImage());
+                }
+            }
+        }
+        // 预缩放到格子大小
+        scaledImages = new Image[imageList.size()];
+        for (int i = 0; i < imageList.size(); i++) {
+            BufferedImage bi = new BufferedImage(cellWidth, cellHeight, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = bi.createGraphics();
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2d.drawImage(imageList.get(i), 0, 0, cellWidth, cellHeight, null);
+            g2d.dispose();
+            scaledImages[i] = bi;
+        }
+        repaint();
+    }
+
+    public void setSkinDir(String dir) {
+        this.skinDir = dir;
+        loadImages();
+    }
+
     // 点击处理（核心交互逻辑）
     // ════════════════════════════════════════════════════
 
@@ -425,6 +534,8 @@ public class BoardPanel extends JPanel {
             repaint();
             animating = true;
 
+            MusicManager.playSfx("click");
+
             List<Position> path = Utils.findPath(gameBoard, firstSelected, secondSelected);
             showLine(path);
 
@@ -437,6 +548,14 @@ public class BoardPanel extends JPanel {
                 secondCell.setEmpty(true);
                 statusPanel.addScore(10);
 
+                // COMBO 浮动文字：在消除位置中点显示
+                int cx = (firstSelected.getCol() + secondSelected.getCol()) * cellWidth / 2 + cellWidth / 2;
+                int cy = (firstSelected.getRow() + secondSelected.getRow()) * cellHeight / 2 + cellHeight / 2;
+                String comboMsg = "COMBO x" + statusPanel.getComboCount();
+                if (statusPanel.getComboCount() >= 3) {
+                    comboTexts.add(new ComboText(cx, cy, comboMsg));
+                }
+
                 if (onFishFeed != null) onFishFeed.run();
                 refreshPairInfo();
 
@@ -446,8 +565,7 @@ public class BoardPanel extends JPanel {
                     if (onWinCallback != null) {
                         onWinCallback.run();
                     }
-                    JFrame p = (JFrame) SwingUtilities.getWindowAncestor(BoardPanel.this);
-                    GameResultDialog.showWin(p, statusPanel.getScore());
+                    JOptionPane.showMessageDialog(BoardPanel.this, "你赢了！");
                 }
 
                 // 恢复状态
@@ -483,24 +601,12 @@ public class BoardPanel extends JPanel {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
 
-        // ── 棋盘内凹边框（inset bevel） ──
-        { // 作用域块，避免变量泄漏
-            int w = getWidth(), h = getHeight();
-            g2.setColor(new Color(0x8a7a62));  // 浅（上 + 左）
-            g2.drawLine(0, 0, w - 1, 0);         // 上——全宽
-            g2.drawLine(0, 1, 0, h - 1);         // 左——跳过(0,0)已被上画
-            g2.setColor(new Color(0x5a4a35));  // 深（下 + 右）
-            g2.drawLine(0, h - 1, w - 1, h - 1);  // 下——全宽
-            g2.drawLine(w - 1, 1, w - 1, h - 1);  // 右——跳过(w-1,0)已被上画
-        }
-
         // ── 绘制棋盘格子 ──
         for (int i = 0; i < gameBoard.getRowCnt(); i++) {
             for (int j = 0; j < gameBoard.getColCnt(); j++) {
                 Rectangle rec = getRectangle(new Position(i, j));
                 int iconIdx = gameBoard.getCell(i, j).getIconIndex();
-                // iconIdx > 0：跳过 border（0.png），真正的棋子从 1.png 开始
-                if (iconIdx > 0 && iconIdx < scaledImages.length) {
+                if (iconIdx >= 0 && iconIdx < scaledImages.length) {
                     g2.drawImage(scaledImages[iconIdx],
                             rec.getX(), rec.getY(), rec.getWidth(), rec.getHeight(),
                             this
@@ -554,8 +660,25 @@ public class BoardPanel extends JPanel {
                 }
             }
 
+            // ── 绘制 bombMode 提示文字 ──
+            if (currentCursorMode == CursorMode.BOMB) {
+                g2.setFont(new Font("Microsoft YaHei", Font.PLAIN, 14));
+                g2.setColor(new Color(0xe8c87a));
+                String msg = "请点击一个棋子自动消除配对";
+                FontMetrics fm = g2.getFontMetrics();
+                int textWidth = fm.stringWidth(msg);
+                int textX = (getWidth() - textWidth) / 2;
+                int textY = fm.getAscent() + 6;
+                g2.drawString(msg, textX, textY);
+            }
+
             // ── 绘制破碎特效（在最上层） ──
             effectManager.draw(g2);
+
+            // ── 绘制 COMBO 浮动文字（最上层） ──
+            for (ComboText ct : comboTexts) {
+                ct.draw(g2);
+            }
         }
     }
 
@@ -579,29 +702,13 @@ public class BoardPanel extends JPanel {
         this.secondSelected = null;
         this.lineList.clear();
         this.itemManager = new ItemManager(saveboard);
+        this.currentCursorMode = CursorMode.NORMAL;
+        setCursor(Cursor.getDefaultCursor());
 
         gameBoard.clearAllChosen();
         effectManager.clearAll();
         updateItemDisplay();
 
         repaint();
-    }
-
-    /** 从文件名提取开头的数字（0.png→0, background.png→Integer.MAX_VALUE） */
-    private static int parseNumericPrefix(String name) {
-        StringBuilder digits = new StringBuilder();
-        for (char c : name.toCharArray()) {
-            if (Character.isDigit(c)) {
-                digits.append(c);
-            } else if (digits.length() > 0) {
-                break;  // 数字结束后停止
-            }
-        }
-        if (digits.length() == 0) return Integer.MAX_VALUE;  // 非数字文件排最后
-        try {
-            return Integer.parseInt(digits.toString());
-        } catch (NumberFormatException e) {
-            return Integer.MAX_VALUE;
-        }
     }
 }

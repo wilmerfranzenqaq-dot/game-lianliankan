@@ -1,6 +1,8 @@
 package effects;
 
 import model.Position;
+import ui.ThemeColors;
+
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -62,16 +64,23 @@ public class EffectManager {
     }
 
     private Color getColorByIconIndex(int iconIndex) {
+        // 金色系调色板 — 与深木 UI 一体，消除时显眼但不跳色
         Color[] colors = {
-                new Color(0xFF6B6B), new Color(0x4ECDC4), new Color(0xFFE66D),
-                new Color(0xFF6B9D), new Color(0xC7F464), new Color(0xFFA07A),
-                new Color(0x95E1D3), new Color(0xF38181), new Color(0xAA96DA),
-                new Color(0xFCBAD3)
+            ThemeColors.FX_SHATTER,      // 主金
+            ThemeColors.FX_HIGHLIGHT,     // 暖白
+            new Color(0xd4a017),          // 深金
+            new Color(0xc9a96e),          // 暗金
+            ThemeColors.FX_LINE_END,      // 暖橙
+            new Color(0xf0d080),          // 浅金
+            ThemeColors.FX_HIGHLIGHT,
+            ThemeColors.FX_SHATTER,
+            ThemeColors.FX_LINE_END,
+            new Color(0xe0b060)
         };
         if (iconIndex >= 1 && iconIndex <= colors.length) {
             return colors[iconIndex - 1];
         }
-        return Color.WHITE;
+        return ThemeColors.FX_HIGHLIGHT;
     }
 
     public void clearAll() {

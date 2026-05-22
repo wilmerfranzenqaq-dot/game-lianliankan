@@ -3,6 +3,8 @@ package ui;
 import model.*;
 import utils.SaveManager;
 
+import utils.MusicManager;
+
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
@@ -29,17 +31,15 @@ public class GamePanel extends JPanel {
     private ControlPanel controlPanel;
     private CatPanel catPanel;
     private boolean isHardMode;
-
-    public void setDifficultyMode(boolean hard) {
-        this.isHardMode = hard;
-    }
     private String username;
+    private String catName;
     private String currentMode;
     private boolean isGuestMode;
 
-    public GamePanel(boolean isHardMode, LeaderBoard leaderBoard, String username) {
+    public GamePanel(boolean isHardMode, LeaderBoard leaderBoard, String username, String catName) {
         this.isHardMode = isHardMode;
         this.username = username;
+        this.catName = catName;
         this.currentMode = isHardMode ? "困难模式" : "简单模式";
         this.isGuestMode = (username == null);
 
@@ -58,10 +58,11 @@ public class GamePanel extends JPanel {
                 0, 100, 800, 750);
         controlPanel = new ControlPanel(statusPanel, boardPanel, 0, 850, 800, 150);
 
-        int gap = 12;
-        int leftW = 764;
+        // ── 将 ControlPanel 引用注入 BoardPanel（供 setItemCounts 调用） ──
+        boardPanel.setControlPanel(controlPanel);
+
         catPanel = new CatPanel();
-        catPanel.setBounds(gap + leftW + gap, gap, 200, 1000 - 2 * gap);
+        catPanel.setBounds(800, 0, 200, 1000);
 
         add(statusPanel);
         add(boardPanel);
@@ -73,10 +74,11 @@ public class GamePanel extends JPanel {
         // 重新开始：重新生成棋盘 + 重置状态
         controlPanel.setOnRestart(() -> {
             ChessGenerator gen2 = new ChessGenerator();
-            Cell[][] newBoard = isHardMode ? gen2.generateHardBoard() : gen2.generateEasyBoard();
+            Cell[][] newBoard = GamePanel.this.isHardMode ? gen2.generateHardBoard() : gen2.generateEasyBoard();
             int newRow = newBoard.length;
             int newCol = newBoard[0].length;
             boardPanel.setGameBoard(new GameBoard(newRow, newCol, newBoard));
+            boardPanel.setSkinDir(controlPanel.getSkinDir());
             statusPanel.resetGame();
             boardPanel.refreshPairInfo();
         });
@@ -84,20 +86,17 @@ public class GamePanel extends JPanel {
         // 消除棋子 → 喂猫
         boardPanel.setOnFishFeed(() -> catPanel.feedFish());
 
-        // 模式变更回调（Settings 中切换模式时先更新 isHardMode）
-        controlPanel.setOnModeChange((hard) -> setDifficultyMode(hard));
-
         // 排行榜按钮
         controlPanel.setOnLeaderBoard(() -> {
             LeaderBoardPanel panel = new LeaderBoardPanel(null, leaderBoard);
             panel.setVisible(true);
         });
 
-        // 胜利回调 → 记录成绩到排行榜
+        // 胜利回调 → 记录成绩到排行榜（游客模式不记录）
         boardPanel.setOnWinCallback(() -> {
-            if(!isGuestMode){
-                String mode = isHardMode ? "困难模式" : "简单模式";
-                LeaderRecord record = new LeaderRecord(username, mode,
+            if (!isGuestMode) {
+                String mode = GamePanel.this.isHardMode ? "困难模式" : "简单模式";
+                LeaderRecord record = new LeaderRecord(catName, username, mode,
                         statusPanel.getScore(), statusPanel.getTimeUsed());
                 leaderBoard.addRecord(record);
             }
@@ -105,7 +104,7 @@ public class GamePanel extends JPanel {
 
         // 保存按钮回调
         controlPanel.setOnSave(() -> {
-            if(isGuestMode){
+            if (isGuestMode) {
                 JOptionPane.showMessageDialog(this, "游客模式不支持存档功能！");
                 return;
             }
@@ -116,7 +115,7 @@ public class GamePanel extends JPanel {
 
         // 加载按钮回调
         controlPanel.setOnLoad(() -> {
-            if(isGuestMode){
+            if (isGuestMode) {
                 JOptionPane.showMessageDialog(this, "游客模式不支持读档功能！");
                 return;
             }
@@ -140,17 +139,105 @@ public class GamePanel extends JPanel {
         controlPanel.setOnUseFreezeTime(() -> {
             boardPanel.useFreezeTime();
         });
+
+        // ── 监听 SettingsDialog：打开时暂停计时器，关闭时恢复 ──
+        controlPanel.settingsButton.addActionListener(e -> {
+            // 暂停计时器（只暂停 StatusPanel 的倒计时，不改变 gameStarted 状态）
+            if (boardPanel.isStarted()) {
+                statusPanel.pauseTimer();
+            }
+
+            JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
+            SettingsDialog dlg = new SettingsDialog(frame, controlPanel.getCurrentCoreSize() > 4, 50);
+            dlg.setOnSkinChange(dir -> controlPanel.currentSkinDir = dir);
+            dlg.setVisible(true);
+            if (dlg.isRestartRequested()) {
+                GamePanel.this.isHardMode = dlg.isHardMode();  // ← 关键：更新模式
+                controlPanel.currentCoreSize = dlg.getSelectedCoreSize();
+                MusicManager.setSfxVolume(dlg.getSfxVolume() / 100f);
+                controlPanel.currentSkinDir = dlg.getSelectedSkinDir();
+                // 重置后会恢复计时器（statusPanel.resetGame 会停止它）
+                if (controlPanel.onRestart != null) controlPanel.onRestart.run();
+            } else {
+                // 没有重置，恢复计时器
+                if (boardPanel.isStarted()) {
+                    statusPanel.resumeTimer();
+                }
+            }
+        });
+
+        // 初始刷新配对信息
+        boardPanel.refreshPairInfo();
+
+        // ── 键盘快捷键 ──
+        setupKeyboardShortcuts();
     }
+
+    /**
+     * 注册全局键盘快捷键
+     * Space=START, R=restart, S=save, L=load
+     */
+    private void setupKeyboardShortcuts() {
+        InputMap im = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap am = getActionMap();
+
+        im.put(KeyStroke.getKeyStroke("SPACE"), "gameStart");
+        im.put(KeyStroke.getKeyStroke("typed r"), "gameRestart");
+        im.put(KeyStroke.getKeyStroke("typed R"), "gameRestart");
+        im.put(KeyStroke.getKeyStroke("typed s"), "gameSave");
+        im.put(KeyStroke.getKeyStroke("typed S"), "gameSave");
+        im.put(KeyStroke.getKeyStroke("typed l"), "gameLoad");
+        im.put(KeyStroke.getKeyStroke("typed L"), "gameLoad");
+
+        am.put("gameStart", new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (controlPanel.startButton != null && controlPanel.startButton.isEnabled()) {
+                    controlPanel.startButton.doClick();
+                }
+            }
+        });
+
+        am.put("gameRestart", new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (controlPanel.restartButton != null && controlPanel.restartButton.isEnabled()) {
+                    controlPanel.restartButton.doClick();
+                }
+            }
+        });
+
+        am.put("gameSave", new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (controlPanel.saveButton != null && controlPanel.saveButton.isEnabled()) {
+                    controlPanel.saveButton.doClick();
+                }
+            }
+        });
+
+        am.put("gameLoad", new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (controlPanel.loadButton != null && controlPanel.loadButton.isEnabled()) {
+                    controlPanel.loadButton.doClick();
+                }
+            }
+        });
+    }
+
+    // ── 供 GameFrame 菜单栏调用的公开暴露按钮 ──
+    public JButton getStartButton() { return controlPanel.startButton; }
+    public JButton getRestartButton() { return controlPanel.restartButton; }
+    public JButton getSaveButton() { return controlPanel.saveButton; }
+    public JButton getLoadButton() { return controlPanel.loadButton; }
 
     /**
      * 保存当前游戏状态到指定槽位
      */
     public boolean saveGame(int slot) {
         String filePath = SaveManager.getSaveFilePath(username, currentMode, slot);
-        
+
         return SaveManager.saveGame(
             filePath,
             username,
+            catName,
             currentMode,
             slot,
             statusPanel.getScore(),
@@ -175,23 +262,28 @@ public class GamePanel extends JPanel {
     public boolean loadGame(int slot) {
         String filePath = SaveManager.getSaveFilePath(username, currentMode, slot);
         SaveManager.SaveData data = SaveManager.loadGame(filePath);
-        
+
         if (data == null) {
             return false;
         }
-        
+
+        // 读取存档中的猫名字
+        if (data.catName != null && !data.catName.trim().isEmpty()) {
+            this.catName = data.catName;
+        }
+
         boardPanel.restoreFromSave(data.gameBoard);
-        
+
         statusPanel.setScore(data.score);
         statusPanel.setRemainingSeconds(data.remainingSeconds);
         statusPanel.setElapsedSeconds(data.elapsedSeconds);
         statusPanel.setComboState(data.comboCount, data.lastEliminationTime);
-        
+
         boardPanel.refreshPairInfo();
-        
+
         boardPanel.setStarted(true);
         statusPanel.startTimer();
-        
+
         return true;
     }
 
@@ -218,6 +310,13 @@ public class GamePanel extends JPanel {
 
     public boolean isGuestMode() {
         return isGuestMode;
+    }
+
+    /**
+     * 获取小猫名字（排行榜/存档显示用）
+     */
+    public String getCatName() {
+        return catName;
     }
 
     /**

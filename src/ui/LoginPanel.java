@@ -91,7 +91,23 @@ public class LoginPanel extends JPanel {
         add(passwordField);
 
         // ── 小猫名字输入框 ──
-        catNameField = new JTextField("Mimi");
+        catNameField = new JTextField();
+        catNameField.setText("给小猫取个名字");
+        catNameField.setForeground(new Color(0x9a9080));
+        catNameField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent e) {
+                if (catNameField.getText().equals("给小猫取个名字")) {
+                    catNameField.setText("");
+                    catNameField.setForeground(new Color(0x3a3530));
+                }
+            }
+            public void focusLost(java.awt.event.FocusEvent e) {
+                if (catNameField.getText().isEmpty()) {
+                    catNameField.setText("给小猫取个名字");
+                    catNameField.setForeground(new Color(0x9a9080));
+                }
+            }
+        });
         catNameField.setSize(170, 32);
         catNameField.setLocation(110, 180);
         catNameField.setOpaque(true);
@@ -100,6 +116,7 @@ public class LoginPanel extends JPanel {
             BorderFactory.createLineBorder(new Color(0xe8ddd0)),
             BorderFactory.createEmptyBorder(0, 8, 0, 8)
         ));
+        add(catNameField);
 
         // ── 登录按钮 ──
         RoundedButton loginBtn = new RoundedButton("登录", 0xd4a04a);
@@ -118,8 +135,12 @@ public class LoginPanel extends JPanel {
                         JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
                         null, options, options[0]);
                 boolean isHardMode = (choice == 1);
+                String catName = catNameField.getText();
+                if (catName.equals("给小猫取个名字") || catName.trim().isEmpty()) {
+                    catName = "Mimi";
+                }
                 MusicManager.play("game");
-                parent.startGame(username, isHardMode);
+                parent.startGame(username, catName, isHardMode);
             } else {
                 JOptionPane.showMessageDialog(this, "账号或密码错误！");
             }
@@ -146,7 +167,16 @@ public class LoginPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "用户已存在！");
                 return;
             }
-            if (writeUserToFile(username, password)) {
+            String catName = catNameField.getText();
+            if (catName.equals("给小猫取个名字") || catName.trim().isEmpty()) {
+                catName = "Mimi";
+            }
+            // 检测猫名是否已被其他用户使用（排除自己——注册时自己是新用户，不存在）
+            if (isCatNameUsedByOthers(catName, "")) {
+                JOptionPane.showMessageDialog(this, "已经有小哈基米叫这个名字了！");
+                return;
+            }
+            if (writeUserToFile(username, password, catName)) {
                 JOptionPane.showMessageDialog(this, "注册成功！");
                 accountField.setText("请输入账号");
                 passwordField.setText("请输入密码");
@@ -168,7 +198,7 @@ public class LoginPanel extends JPanel {
                     null, options, options[0]);
             boolean isHardMode = (choice == 1);
             MusicManager.play("game");
-            parent.startGame(null, isHardMode);
+            parent.startGame(null, "Mimi", isHardMode);
         });
 
         // ── 背景图片 ──
@@ -204,10 +234,11 @@ public class LoginPanel extends JPanel {
         return false;
     }
 
-    /** 将新用户追加写入 user.txt */
-    private static boolean writeUserToFile(String name, String password) {
+    /** 将新用户追加写入 user.txt（含小猫名字） */
+    private static boolean writeUserToFile(String name, String password, String catName) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(USER_FILE, true))) {
-            writer.write(name + "," + password);
+            // 格式：username,password,nickname,avatarFilename,catsName
+            writer.write(name + "," + password + ",,," + catName);
             writer.newLine();
             return true;
         } catch (IOException e) {
@@ -216,17 +247,43 @@ public class LoginPanel extends JPanel {
         }
     }
 
-    /** 验证用户名和密码是否匹配 */
+    /** 验证用户名和密码是否匹配（兼容 2 列和 5 列格式） */
     private static boolean validateUser(String username, String password) {
         try (BufferedReader reader = new BufferedReader(new FileReader(USER_FILE))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
-                if (parts.length == 2 && parts[0].equals(username) && parts[1].equals(password))
+                if (parts.length >= 2 && parts[0].equals(username) && parts[1].equals(password))
                     return true;
             }
         } catch (IOException e) {
             // 文件不存在或无法读取 → 验证失败
+        }
+        return false;
+    }
+
+    /**
+     * 检测猫名是否已被其他用户使用
+     * @param catName 要检测的猫名
+     * @param excludeUser 排除的用户名（自己的旧名），空串代表不排除
+     * @return true 已被占用
+     */
+    private static boolean isCatNameUsedByOthers(String catName, String excludeUser) {
+        if (catName == null || catName.trim().isEmpty()) return false;
+        try (BufferedReader reader = new BufferedReader(new FileReader(USER_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length >= 5) {
+                    String user = parts[0].trim();
+                    String existingCat = parts[4].trim();
+                    if (existingCat.equals(catName.trim()) && !user.equals(excludeUser)) {
+                        return true;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            // 文件不存在 → 无占用
         }
         return false;
     }
