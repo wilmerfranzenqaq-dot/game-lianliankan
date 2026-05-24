@@ -3,6 +3,8 @@ package ui;
 import javax.swing.*;
 import java.awt.*;
 
+import utils.MusicManager;
+
 /**
  * 游戏状态面板 — HUD 显示得分、倒计时、配对进度、已用时间
  *
@@ -40,6 +42,7 @@ public class StatusPanel extends JPanel {
     Timer freezeTimer;
     boolean isTimeFrozen = false;
     boolean gameStarted = false;    // 标记游戏是否已经开始
+    boolean gameOver = false;
 
     // ── 游戏数据 ──
     int totalSeconds;       // 剩余秒数
@@ -139,7 +142,15 @@ public class StatusPanel extends JPanel {
             }
             // 已用时间始终递增（即使用户冻结了剩余时间）
 
+            if (totalSeconds == 20) {
+                MusicManager.pause();
+                MusicManager.playSfxFromPath(
+                    "./resource/music/timeWarning.WAV",
+                    MusicManager::resume
+                );
+            }
             if (totalSeconds == 0) {
+                gameOver = true;
                 timer.stop();
                 JFrame p = (JFrame) SwingUtilities.getWindowAncestor(StatusPanel.this);
                 GameResultDialog.showLose(p);
@@ -324,9 +335,14 @@ public class StatusPanel extends JPanel {
 
     /** 胜利 — 停止倒计时 */
     public void winGame() {
+        gameOver = true;
         timer.stop();
         gameStarted = false;
         statusLabel.setText("你赢了！");
+    }
+
+    public boolean isGameOver(){
+        return gameOver;
     }
 
     public void addFreezeTime(int seconds) {
@@ -337,6 +353,7 @@ public class StatusPanel extends JPanel {
 
     /** 重置所有状态（重新开始游戏时调用） */
     public void resetGame() {
+        gameOver = false;
         comboCount = 0;
         lastEliminationTime = 0;
         comboLabel.setVisible(false);

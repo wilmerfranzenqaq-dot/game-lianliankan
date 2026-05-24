@@ -108,6 +108,10 @@ public class GamePanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "游客模式不支持存档功能！");
                 return;
             }
+            if (statusPanel.isGameOver()) {                    
+            JOptionPane.showMessageDialog(this, "游戏已结束，无法保存！");
+                return;
+            }
             JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(controlPanel);
             SaveLoadDialog dialog = new SaveLoadDialog(frame, GamePanel.this, username, currentMode);
             dialog.setVisible(true);

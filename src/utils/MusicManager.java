@@ -44,11 +44,52 @@ public class MusicManager {
         }
     }
 
+    /** 暂停当前 BGM（保留 clip，可恢复） */
+    public static void pause() {
+        if (currentClip != null && currentClip.isRunning()) {
+            currentClip.stop();
+        }
+    }
+
+    /** 恢复已暂停的 BGM */
+    public static void resume() {
+        if (currentClip != null && !currentClip.isRunning()) {
+            currentClip.loop(Clip.LOOP_CONTINUOUSLY);
+        }
+    }
+
     // ── SFX ──
 
     /** 播放一次性音效（与 BGM 叠加） */
     public static void playSfx(String name) {
         playSfx(name, 1.0f);
+    }
+
+    /** 播放绝对路径音效，播放完毕后执行回调（用于暂停 BGM 后恢复） */
+    public static void playSfxFromPath(String absolutePath, Runnable onDone) {
+        try {
+            File file = new File(absolutePath);
+            if (!file.exists()) {
+                System.err.println("音效文件不存在: " + absolutePath);
+                if (onDone != null) onDone.run();
+                return;
+            }
+
+            AudioInputStream stream = AudioSystem.getAudioInputStream(file);
+            Clip clip = AudioSystem.getClip();
+            clip.open(stream);
+            applySfxVolume(clip);
+            clip.start();
+            clip.addLineListener(e -> {
+                if (e.getType() == LineEvent.Type.STOP) {
+                    clip.close();
+                    if (onDone != null) onDone.run();
+                }
+            });
+        } catch (Exception e) {
+            System.err.println("sfx error: " + e.getMessage());
+            if (onDone != null) onDone.run();
+        }
     }
 
     /** 播放带变调的一次性音效 */
