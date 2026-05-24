@@ -120,7 +120,7 @@ public class GamePanel extends JPanel {
                 return;
             }
             JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(controlPanel);
-            SaveLoadDialog dialog = new SaveLoadDialog(frame, GamePanel.this, username, currentMode);
+            SaveLoadDialog dialog = new SaveLoadDialog(frame, GamePanel.this, username, currentMode, false);
             dialog.setVisible(true);
         });
 

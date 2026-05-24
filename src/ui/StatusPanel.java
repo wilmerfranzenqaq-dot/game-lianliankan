@@ -31,6 +31,7 @@ public class StatusPanel extends JPanel {
     JLabel timecountLabel;
     JLabel comboLabel;
     JLabel remainingPairLabel;
+    int freezeCountdown;
     JLabel progressLabel;
 
     // ── 定时器 ──
@@ -119,18 +120,15 @@ public class StatusPanel extends JPanel {
         comboTimer.setRepeats(false);
 
         freezeTimer = new Timer(1000, e -> {
-            totalSeconds++;
-            if (totalSeconds > 120) {
-                totalSeconds = 120;
+            freezeCountdown --;
+            if(freezeCountdown <= 0){
                 freezeTimer.stop();
                 isTimeFrozen = false;
             }
-            seconds = totalSeconds % 60;
-            minutes = totalSeconds / 60;
-            timeLabel.setText(String.format("%02d:%02d", minutes, seconds));
         });
 
         timer = new Timer(1000, e -> {
+            // 剩余时间只在非冻结状态下递减
             if (!isTimeFrozen) {
                 totalSeconds--;
                 countSeconds++;
@@ -138,15 +136,16 @@ public class StatusPanel extends JPanel {
                 minutes = totalSeconds / 60;
                 secondsUsed = countSeconds % 60;
                 minutesUsed = countSeconds / 60;
-
-                if (totalSeconds == 0) {
-                    timer.stop();
-                    JFrame p = (JFrame) SwingUtilities.getWindowAncestor(StatusPanel.this);
-                    GameResultDialog.showLose(p);
-                }
-                timeLabel.setText(String.format("%02d:%02d", minutes, seconds));
-                timecountLabel.setText(String.format("%02d:%02d", minutesUsed, secondsUsed));
             }
+            // 已用时间始终递增（即使用户冻结了剩余时间）
+
+            if (totalSeconds == 0) {
+                timer.stop();
+                JFrame p = (JFrame) SwingUtilities.getWindowAncestor(StatusPanel.this);
+                GameResultDialog.showLose(p);
+            }
+            timeLabel.setText(String.format("%02d:%02d", minutes, seconds));
+            timecountLabel.setText(String.format("%02d:%02d", minutesUsed, secondsUsed));
         });
 
         // ── 四栏 GridBagLayout ──
@@ -332,6 +331,7 @@ public class StatusPanel extends JPanel {
 
     public void addFreezeTime(int seconds) {
         isTimeFrozen = true;
+        freezeCountdown = seconds;
         freezeTimer.start();
     }
 
@@ -343,6 +343,7 @@ public class StatusPanel extends JPanel {
         comboTimer.stop();
         freezeTimer.stop();
         isTimeFrozen = false;
+        freezeCountdown = 0;
         gameStarted = false;
 
         totalSeconds = 120;

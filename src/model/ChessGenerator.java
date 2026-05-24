@@ -103,7 +103,7 @@ public class ChessGenerator {
             }
 
             // 存在有效配对则返回
-            if (hasValidPair(board)) {
+            if (isFullySolvable(board)) {
                 return board;
             }
         }
@@ -127,34 +127,71 @@ public class ChessGenerator {
     /**
      * 检查棋盘中是否存在至少一对可消除（同图标且可连接）的棋子
      */
-    private boolean hasValidPair(Cell[][] board) {
+    private boolean isFullySolvable(Cell[][] board) {
         int totalRow = board.length;
         int totalCol = board[0].length;
-        List<Position> nonEmptyCells = new ArrayList<>();
+        List<Position> initialCells = new ArrayList<>();
 
         for (int i = 0; i < totalRow; i++) {
             for (int j = 0; j < totalCol; j++) {
                 if (!board[i][j].isEmpty()) {
-                    nonEmptyCells.add(new Position(i, j));
+                    initialCells.add(new Position(i, j));
                 }
             }
         }
 
-        GameBoard gameBoard = new GameBoard(totalRow, totalCol, board);
+        if(initialCells.isEmpty()) return true;
+        if(initialCells.size() % 2 != 0) return false;
 
-        for (int i = 0; i < nonEmptyCells.size(); i++) {
-            for (int j = i + 1; j < nonEmptyCells.size(); j++) {
-                Position posA = nonEmptyCells.get(i);
-                Position posB = nonEmptyCells.get(j);
-                if (board[posA.getRow()][posA.getCol()].getIconIndex()
-                        == board[posB.getRow()][posB.getCol()].getIconIndex()) {
-                    if (Utils.canLinkAB(gameBoard, posA, posB)) {
-                        return true;
+        int maxAttempts = 8;
+        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+            Cell[][] simBoard = cloneBoard(board, totalRow, totalCol);
+            List<Position> remaining = new ArrayList<>(initialCells);
+            if(attempt > 0){
+                Collections.shuffle(remaining);
+            }
+        boolean deadlocked = false;
+        while(!remaining.isEmpty() && !deadlocked){
+            deadlocked = true;
+            GameBoard gb = new GameBoard(totalRow, totalCol, simBoard);
+
+            outer:
+            for (int i = 0; i < remaining.size(); i++) {
+                for (int j = i + 1; j < remaining.size(); j++) {
+                    Position posA = remaining.get(i);
+                    Position posB = remaining.get(j);
+                    Cell cellA = simBoard[posA.getRow()][posA.getCol()];
+                    Cell cellB = simBoard[posB.getRow()][posB.getCol()];
+
+                    if (cellA.getIconIndex() == cellB.getIconIndex()
+                            && cellA.getIconIndex() != 0
+                            && Utils.canLinkAB(gb, posA, posB)) {
+                        simBoard[posA.getRow()][posA.getCol()].setEmpty(true);
+                        simBoard[posB.getRow()][posB.getCol()].setEmpty(true);
+                        remaining.remove(j);   // 先删大的索引
+                        remaining.remove(i);
+                        deadlocked = false;
+                        break outer;
                     }
                 }
             }
         }
+        if(remaining.isEmpty()){
+            return true;
+        }
+    }
         return false;
+    }
+
+    private Cell[][] cloneBoard(Cell[][] board, int totalRow, int totalCol) {
+        Cell[][] clone = new Cell[totalRow][totalCol];
+        for (int i = 0; i < totalRow; i++) {
+        for (int j = 0; j < totalCol; j++) {
+            clone[i][j] = new Cell(new Position(i, j),
+                    board[i][j].isEmpty(), board[i][j].getIconIndex());
+            }
+        }
+        return clone;
     }
 
     /**

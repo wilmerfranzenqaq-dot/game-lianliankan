@@ -67,6 +67,7 @@ public class SaveManager {
         }
         try (BufferedReader reader = new BufferedReader(new FileReader(file))){
             String username = reader.readLine();
+            String catName = reader.readLine();
             String mode = reader.readLine();
             int slot = Integer.parseInt(reader.readLine());
             int score = Integer.parseInt(reader.readLine());
@@ -75,7 +76,6 @@ public class SaveManager {
             int comboCount = Integer.parseInt(reader.readLine());
             long lastEliminationTime = Long.parseLong(reader.readLine());
             // 新增：读取 totalPairs
-            String catName = reader.readLine();
             int totalPairs = Integer.parseInt(reader.readLine());
             
             String[] dimensions = reader.readLine().split(",");

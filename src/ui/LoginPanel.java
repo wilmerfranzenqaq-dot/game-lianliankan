@@ -121,7 +121,7 @@ public class LoginPanel extends JPanel {
         // ── 登录按钮 ──
         RoundedButton loginBtn = new RoundedButton("登录", 0xd4a04a);
         loginBtn.setForeground(Color.WHITE);
-        loginBtn.setBounds(90, 225, 80, 32);
+        loginBtn.setBounds(60, 225, 80, 32);
         add(loginBtn);
 
         loginBtn.addActionListener(e -> {
@@ -149,7 +149,7 @@ public class LoginPanel extends JPanel {
         // ── 注册按钮 ──
         RoundedButton registerBtn = new RoundedButton("注册", 0x8a7a65);
         registerBtn.setForeground(Color.WHITE);
-        registerBtn.setBounds(180, 225, 80, 32);
+        registerBtn.setBounds(140, 225, 80, 32);
         add(registerBtn);
 
         registerBtn.addActionListener(e -> {
@@ -187,7 +187,7 @@ public class LoginPanel extends JPanel {
 
         RoundedButton guestBtn = new RoundedButton("游客模式", 0x9a7a5a);
         guestBtn.setForeground(Color.WHITE);
-        guestBtn.setBounds(260, 225, 120, 32);
+        guestBtn.setBounds(220, 225, 120, 32);
         add(guestBtn);
 
         guestBtn.addActionListener(e -> {
