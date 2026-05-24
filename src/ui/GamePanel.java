@@ -305,6 +305,10 @@ public class GamePanel extends JPanel {
         return boardPanel.isStarted();
     }
 
+    public void stopEffects() {
+        boardPanel.stopEffects();
+    }
+
     /**
      * 获取用户名
      */

@@ -108,20 +108,24 @@ public class ChessGenerator {
             }
         }
 
-        // 超过重试次数仍无解 — 返回最后一次生成的棋盘（极端情况）
-        Cell[][] board = new Cell[totalRow][totalCol];
-        for (int i = 0; i < totalRow; i++) {
-            for (int j = 0; j < totalCol; j++) {
-                board[i][j] = new Cell(new Position(i, j), true, BORDER_ICON_INDEX);
+        // 超过重试次数 — 进入无限重试（极端情况极少发生）
+        while (true) {
+            Cell[][] board = new Cell[totalRow][totalCol];
+            for (int i = 0; i < totalRow; i++) {
+                for (int j = 0; j < totalCol; j++) {
+                    board[i][j] = new Cell(new Position(i, j), true, BORDER_ICON_INDEX);
+                }
+            }
+            List<Integer> iconList = generatePairedIconList(validPositions.size(), chessTypeCount);
+            Collections.shuffle(iconList);
+            for (int idx = 0; idx < validPositions.size(); idx++) {
+                Position pos = validPositions.get(idx);
+                board[pos.getRow()][pos.getCol()] = new Cell(pos, false, iconList.get(idx));
+            }
+            if (isFullySolvable(board)) {
+                return board;
             }
         }
-        List<Integer> iconList = generatePairedIconList(validPositions.size(), chessTypeCount);
-        Collections.shuffle(iconList);
-        for (int idx = 0; idx < validPositions.size(); idx++) {
-            Position pos = validPositions.get(idx);
-            board[pos.getRow()][pos.getCol()] = new Cell(pos, false, iconList.get(idx));
-        }
-        return board;
     }
 
     /**

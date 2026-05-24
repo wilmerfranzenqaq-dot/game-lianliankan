@@ -68,7 +68,7 @@ public class GameBoard {
 
     /** 已消除的配对数 */
     public int getClearedPairs() {
-        return totalPairs - getRemainingPairs();
+        return totalPairs - countNonEmptyInnerCells() / 2;
     }
 
     /** 剩余未消除的配对数 */

@@ -18,6 +18,7 @@ public class GameFrame extends JFrame {
 
     private CardLayout cardLayout;
     private boolean gameAdded = false;
+    private String currentPage = "";
     private LeaderBoard leaderBoard;
     JMenuBar menuBar;
     JMenu gameMenu;
@@ -78,7 +79,11 @@ public class GameFrame extends JFrame {
 
     /** 切换到指定页面 */
     public void showPage(String name) {
+        if ("game".equals(currentPage) && !"game".equals(name) && currentGamePanel != null) {
+            currentGamePanel.stopEffects();
+        }
         cardLayout.show(getContentPane(), name);
+        currentPage = name;
     }
 
     /** 创建菜单栏 */

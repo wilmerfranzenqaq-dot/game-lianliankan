@@ -205,7 +205,7 @@ public class SettingsDialog extends JDialog {
             "HINT：提示一对可消除的棋子",
             "SHUFFLE：打乱所有棋子位置",
             "BOMB：点击一个棋子自动消除配对",
-            "FREEZE：冻结倒计时 10 秒",
+            "FREEZE：冻结倒计时 5 秒",
         };
         JPanel tipsInner = new JPanel();
         tipsInner.setLayout(new BoxLayout(tipsInner, BoxLayout.Y_AXIS));

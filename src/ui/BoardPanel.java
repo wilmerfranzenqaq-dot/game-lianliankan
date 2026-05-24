@@ -66,6 +66,7 @@ public class BoardPanel extends JPanel {
     Position[] hintPositions = null;
     long hintShowTime = 0;
     CursorMode currentCursorMode = CursorMode.NORMAL;
+    Timer hintTimer;
 
     // ── 连接线绘制 ──
     List<Line> lineList = new ArrayList<>();
@@ -80,6 +81,7 @@ public class BoardPanel extends JPanel {
 
     // ── COMBO 浮动文字 ──
     private List<ComboText> comboTexts = new ArrayList<>();
+    private Timer effectTimer;
 
     // ════════════════════════════════════════════════════
     // 构造与初始化
@@ -134,7 +136,7 @@ public class BoardPanel extends JPanel {
 
         // ── 初始化特效管理器并启动动画定时器 ──
         effectManager = new EffectManager();
-        Timer effectTimer = new Timer(16, e -> {
+        effectTimer = new Timer(16, e -> {
             effectManager.update();
 
             // 更新 COMBO 浮动文字
@@ -181,6 +183,15 @@ public class BoardPanel extends JPanel {
      */
     public void startGame() {
         started = true;
+        if (effectTimer != null && !effectTimer.isRunning()) {
+            effectTimer.start();
+        }
+    }
+
+    public void stopEffects() {
+        if (effectTimer != null && effectTimer.isRunning()) {
+            effectTimer.stop();
+        }
     }
 
     /** 替换棋盘（RESTART / 设置变更时调用） */
@@ -273,15 +284,17 @@ public class BoardPanel extends JPanel {
             hintPositions = result;
             hintShowTime = System.currentTimeMillis();
             repaint();
-
-            Timer timer = new Timer(1500, e -> {
+            if(hintTimer != null){
+                hintTimer.stop();
+            }
+            hintTimer = new Timer(1500, e -> {
                 hintPositions = null;
                 currentCursorMode = CursorMode.NORMAL;
                 setCursor(Cursor.getDefaultCursor());
                 repaint();
             });
-            timer.setRepeats(false);
-            timer.start();
+            hintTimer.setRepeats(false);
+            hintTimer.start();
         } else {
             JOptionPane.showMessageDialog(this, "没有可消除的配对！");
             currentCursorMode = CursorMode.NORMAL;
