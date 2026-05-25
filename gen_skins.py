@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw
 import os
 
 SIZE = 64
-OUT = r"D:\game-lianliankan\resource"
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resource")
 os.makedirs(OUT, exist_ok=True)
 
 

@@ -4,6 +4,7 @@ import utils.MusicManager;
 
 import javax.swing.*;
 import javax.swing.plaf.basic.BasicSliderUI;
+import utils.PathManager;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.util.function.Consumer;
@@ -44,7 +45,7 @@ public class SettingsDialog extends JDialog {
     private final JSlider sfxSlider;
 
     private boolean restartRequested = false;
-    private String skinDir = "resource";
+    private String skinDir = PathManager.SKIN_DEFAULT;
     private Consumer<String> onSkinChange;
 
     // ── Helper: 圆角面板 ──
@@ -193,7 +194,7 @@ public class SettingsDialog extends JDialog {
         content.add(roundedPanel("皮肤主题", skinInner));
         content.add(Box.createVerticalStrut(GAP_SECTION));
         skinCombo.addActionListener(e -> {
-            skinDir = skinCombo.getSelectedIndex() == 0 ? "resource" : "resource/fruit";
+            skinDir = skinCombo.getSelectedIndex() == 0 ? PathManager.SKIN_DEFAULT : PathManager.SKIN_FRUIT;
             if (onSkinChange != null) onSkinChange.accept(skinDir);
         });
 

@@ -1,5 +1,6 @@
 package ui;
 import utils.MusicManager;
+import utils.PathManager;
 import ui.ThemeColors;
 
 import javax.swing.*;
@@ -52,7 +53,7 @@ public class ControlPanel extends JPanel {
     // ── 设置参数（从 SettingsDialog 读回） ──
     int currentTimeLimit = 120;
     int currentCoreSize = 4;
-    String currentSkinDir = "resource";
+    String currentSkinDir = PathManager.SKIN_DEFAULT;
 
     public String getSkinDir() { return currentSkinDir; }
 

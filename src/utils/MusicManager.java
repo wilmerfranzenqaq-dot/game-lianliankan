@@ -1,20 +1,19 @@
 package utils;
 
 import javax.sound.sampled.*;
-import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 
 /**
  * 音乐+音效管理器 — BGM 循环播放 + SFX 一次性播放（叠加在 BGM 上）
+ *
+ * 音频文件通过 {@link PathManager#getAudioResourceUrl} 加载，
+ * 优先从 classpath 查找，回退到文件系统，无任何硬编码绝对路径。
  *
  * SFX 变调：修改 AudioFormat 的采样率，音调随采样率升高而变高。
  *   1.0x = 正常, >1.0x = 更高更快, <1.0x = 更低更慢
  */
 public class MusicManager {
-
-    public static final String DIR = "resource" + File.separator + "music" + File.separator;
-    public static final String FALLBACK_DIR = "D:" + File.separator + "game-lianliankan"
-            + File.separator + "resource" + File.separator + "music" + File.separator;
 
     private static Clip currentClip;
     private static String pendingTrack;
@@ -65,17 +64,17 @@ public class MusicManager {
         playSfx(name, 1.0f);
     }
 
-    /** 播放绝对路径音效，播放完毕后执行回调（用于暂停 BGM 后恢复） */
-    public static void playSfxFromPath(String absolutePath, Runnable onDone) {
+    /** 播放一次性音效，播放完毕后执行回调（用于暂停 BGM 后恢复） */
+    public static void playSfx(String name, Runnable onDone) {
         try {
-            File file = new File(absolutePath);
-            if (!file.exists()) {
-                System.err.println("音效文件不存在: " + absolutePath);
+            URL url = PathManager.getAudioResourceUrl(name);
+            if (url == null) {
+                System.err.println("音效文件不存在: " + name);
                 if (onDone != null) onDone.run();
                 return;
             }
 
-            AudioInputStream stream = AudioSystem.getAudioInputStream(file);
+            AudioInputStream stream = AudioSystem.getAudioInputStream(url);
             Clip clip = AudioSystem.getClip();
             clip.open(stream);
             applySfxVolume(clip);
@@ -95,11 +94,10 @@ public class MusicManager {
     /** 播放带变调的一次性音效 */
     public static void playSfx(String name, float pitchFactor) {
         try {
-            File file = new File(DIR + name + ".wav");
-            if (!file.exists()) file = new File(FALLBACK_DIR + name + ".wav");
-            if (!file.exists()) return;
+            URL url = PathManager.getAudioResourceUrl(name);
+            if (url == null) return;
 
-            AudioInputStream stream = AudioSystem.getAudioInputStream(file);
+            AudioInputStream stream = AudioSystem.getAudioInputStream(url);
 
             // 变调：修改采样率
             if (Math.abs(pitchFactor - 1.0f) > 0.01f) {
@@ -151,11 +149,13 @@ public class MusicManager {
         try {
             if (currentClip != null) { currentClip.close(); currentClip = null; }
 
-            File file = new File(DIR + name + ".wav");
-            if (!file.exists()) file = new File(FALLBACK_DIR + name + ".wav");
-            if (!file.exists()) { System.err.println("音乐文件不存在: " + file); return; }
+            URL url = PathManager.getAudioResourceUrl(name);
+            if (url == null) {
+                System.err.println("音乐文件不存在: " + name);
+                return;
+            }
 
-            AudioInputStream stream = AudioSystem.getAudioInputStream(file);
+            AudioInputStream stream = AudioSystem.getAudioInputStream(url);
             currentClip = AudioSystem.getClip();
 
             currentClip.addLineListener(event -> {

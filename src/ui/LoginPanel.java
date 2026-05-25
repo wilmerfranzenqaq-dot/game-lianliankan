@@ -1,6 +1,7 @@
 package ui;
 
 import utils.MusicManager;
+import utils.PathManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,7 +21,7 @@ import java.io.*;
  */
 public class LoginPanel extends JPanel {
 
-    private static final String USER_FILE = System.getProperty("user.dir") + File.separator + "user.txt";
+    private static final File USER_FILE = PathManager.getUserFile();
 
     // ── UI 组件 ──
     private JTextField accountField;
@@ -202,16 +203,9 @@ public class LoginPanel extends JPanel {
         });
 
         // ── 背景图片 ──
-        String bgPath = System.getProperty("user.dir") + File.separator + "resource"
-                + File.separator + "background.png";
-        File bgFile = new File(bgPath);
-        if (!bgFile.exists()) {
-            bgPath = "D:" + File.separator + "game-lianliankan" + File.separator
-                    + "resource" + File.separator + "background.png";
-            bgFile = new File(bgPath);
-        }
-        if (bgFile.exists()) {
-            JLabel bgLabel = new JLabel(new ImageIcon(bgPath));
+        ImageIcon bgIcon = PathManager.getResourceImageIcon("background.png", "resource/background.png");
+        if (bgIcon != null) {
+            JLabel bgLabel = new JLabel(bgIcon);
             bgLabel.setSize(400, 300);
             bgLabel.setLocation(-10, -6);
             add(bgLabel);

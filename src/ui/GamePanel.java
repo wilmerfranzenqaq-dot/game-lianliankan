@@ -263,14 +263,20 @@ public class GamePanel extends JPanel {
     /**
      * 加载指定槽位的存档并恢复游戏状态
      */
-    public boolean loadGame(int slot) {
+    /**
+     * 加载存档，返回错误信息（null 表示成功）
+     */
+    public String loadGame(int slot) {
         String filePath = SaveManager.getSaveFilePath(username, currentMode, slot);
         SaveManager.SaveData data = SaveManager.loadGame(filePath);
 
         if (data == null) {
-            return false;
+            return "存档文件不存在或已损坏";
         }
 
+        if (!username.equals(data.username)) {
+            return "该存档不属于当前用户，无法读取！";
+        }
         // 读取存档中的猫名字
         if (data.catName != null && !data.catName.trim().isEmpty()) {
             this.catName = data.catName;
@@ -288,7 +294,7 @@ public class GamePanel extends JPanel {
         boardPanel.setStarted(true);
         statusPanel.startTimer();
 
-        return true;
+        return null;
     }
 
     /**

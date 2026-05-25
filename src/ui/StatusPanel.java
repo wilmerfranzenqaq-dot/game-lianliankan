@@ -17,7 +17,7 @@ import utils.MusicManager;
  * 连击系统：
  *   - 3 秒内连续消除 → COMBO 计数递增
  *   - COMBO ≥ 3 时，单次得分 × (COMBO - 1)
- *   - 触发 COMBO 时启动彩虹闪烁动画（AnimationThread 内部类）
+ *   - COMBO ≥ 3 时单次得分按连击数倍增
  */
 public class StatusPanel extends JPanel {
 
@@ -31,14 +31,12 @@ public class StatusPanel extends JPanel {
     JLabel timeLabel;
     JLabel timeuseLabel;
     JLabel timecountLabel;
-    JLabel comboLabel;
     JLabel remainingPairLabel;
     int freezeCountdown;
     JLabel progressLabel;
 
     // ── 定时器 ──
     Timer timer;           // 每秒更新倒计时
-    Timer comboTimer;
     Timer freezeTimer;
     boolean isTimeFrozen = false;
     boolean gameStarted = false;    // 标记游戏是否已经开始
@@ -67,7 +65,6 @@ public class StatusPanel extends JPanel {
         // ── 字体 ──
         Font cjkFont = new Font("Microsoft YaHei", Font.PLAIN, 13);
         Font numFont = new Font("Arial", Font.BOLD, 28);
-        Font comboFont = new Font("Microsoft YaHei", Font.BOLD, 14);
 
         // ── 分数 ──
         scoreLabel = new JLabel("分数", SwingConstants.CENTER);
@@ -96,31 +93,11 @@ public class StatusPanel extends JPanel {
         timecountLabel.setFont(numFont);
         timecountLabel.setForeground(new Color(0xe8c87a));
 
-        // ── COMBO 标签 ──
-        comboLabel = new JLabel("", SwingConstants.CENTER);
-        comboLabel.setFont(comboFont);
-        comboLabel.setForeground(new Color(255, 69, 0));
-        comboLabel.setOpaque(true);
-        comboLabel.setBackground(new Color(255, 255, 220));
-        comboLabel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(255, 165, 0), 2),
-                BorderFactory.createEmptyBorder(2, 6, 2, 6)
-        ));
-        comboLabel.setVisible(false);
-
         // ── 游戏参数初始化 ──
         totalSeconds = 120;
         countSeconds = 0;
         comboCount = 0;
         lastEliminationTime = 0;
-
-        // ── COMBO 超时定时器 ──
-        comboTimer = new Timer((int) COMBO_TIMEOUT, e -> {
-            comboLabel.setVisible(false);
-            comboCount = 0;
-            comboTimer.stop();
-        });
-        comboTimer.setRepeats(false);
 
         freezeTimer = new Timer(1000, e -> {
             freezeCountdown --;
@@ -144,10 +121,7 @@ public class StatusPanel extends JPanel {
 
             if (totalSeconds == 20) {
                 MusicManager.pause();
-                MusicManager.playSfxFromPath(
-                    "./resource/music/timeWarning.WAV",
-                    MusicManager::resume
-                );
+                MusicManager.playSfx("timeWarning", MusicManager::resume);
             }
             if (totalSeconds == 0) {
                 gameOver = true;
@@ -166,15 +140,14 @@ public class StatusPanel extends JPanel {
         gbc.weighty = 1.0;
 
         // 第 1 栏：分数（weightx=1.0, anchor=WEST — 左对齐）
-        JPanel left = new JPanel(new BorderLayout());
+        JPanel left = new JPanel(new GridBagLayout());
         left.setBackground(new Color(0x4a3d2e));
         left.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 8));
-        JPanel scoreBox = new JPanel(new BorderLayout());
-        scoreBox.setOpaque(false);
-        scoreBox.add(scoreLabel, BorderLayout.NORTH);
-        scoreBox.add(scoreValue, BorderLayout.CENTER);
-        left.add(scoreBox, BorderLayout.CENTER);
-        left.add(comboLabel, BorderLayout.SOUTH);
+        JPanel leftInner = new JPanel(new GridLayout(2, 1));
+        leftInner.setBackground(new Color(0x4a3d2e));
+        leftInner.add(scoreLabel);
+        leftInner.add(scoreValue);
+        left.add(leftInner);
 
         gbc.gridx = 0;
         gbc.weightx = 1.0;
@@ -308,29 +281,10 @@ public class StatusPanel extends JPanel {
         int bonusPoints = points;
         if (comboCount >= 3) {
             bonusPoints = points * (comboCount - 1);
-            showComboMessage(comboCount, bonusPoints);
         }
 
         score += bonusPoints;
         scoreValue.setText(String.valueOf(score));
-
-        if (comboCount >= 3) {
-            comboTimer.restart();
-        }
-    }
-
-    /** 显示 COMBO 提示并启动彩虹闪烁动画 */
-    private void showComboMessage(int comboCount, int bonusPoints) {
-        String message = String.format(">>>COMBO x%d! +%d分<<<", comboCount, bonusPoints);
-
-        comboLabel.setText(message);
-        comboLabel.setVisible(true);
-
-        revalidate();
-        repaint();
-
-        AnimationThread anim = new AnimationThread(comboLabel);
-        anim.start();
     }
 
     /** 胜利 — 停止倒计时 */
@@ -356,8 +310,6 @@ public class StatusPanel extends JPanel {
         gameOver = false;
         comboCount = 0;
         lastEliminationTime = 0;
-        comboLabel.setVisible(false);
-        comboTimer.stop();
         freezeTimer.stop();
         isTimeFrozen = false;
         freezeCountdown = 0;
@@ -423,12 +375,6 @@ public class StatusPanel extends JPanel {
     public void setComboState(int comboCount, long lastTime) {
         this.comboCount = comboCount;
         this.lastEliminationTime = lastTime;
-        if (comboCount >= 3) {
-            String message = String.format(">>>COMBO x%d! <<<", comboCount);
-            comboLabel.setText(message);
-            comboLabel.setVisible(true);
-            comboTimer.restart();
-        }
     }
 
     /**
@@ -440,45 +386,4 @@ public class StatusPanel extends JPanel {
         timer.start();
     }
 
-    // ════════════════════════════════════════════════════
-    // 内部类：COMBO 彩虹闪烁动画
-    // ════════════════════════════════════════════════════
-
-    /**
-     * COMBO 标签彩虹色闪烁动画线程
-     * 在 7 种颜色间循环 3 轮，每帧 100ms，结束后恢复橙色
-     */
-    static class AnimationThread extends Thread {
-        JLabel label;
-
-        public AnimationThread(JLabel label) {
-            this.label = label;
-        }
-
-        @Override
-        public void run() {
-            try {
-                Color[] rainbowColors = {
-                        Color.RED,
-                        new Color(255, 127, 0),
-                        Color.YELLOW,
-                        Color.GREEN,
-                        Color.CYAN,
-                        Color.BLUE,
-                        new Color(148, 0, 211)
-                };
-
-                for (int cycle = 0; cycle < 3; cycle++) {
-                    for (int i = 0; i < rainbowColors.length; i++) {
-                        final Color c = rainbowColors[i];
-                        SwingUtilities.invokeLater(() -> label.setForeground(c));
-                        Thread.sleep(100);
-                    }
-                }
-                SwingUtilities.invokeLater(() -> label.setForeground(new Color(255, 165, 0)));
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
 }

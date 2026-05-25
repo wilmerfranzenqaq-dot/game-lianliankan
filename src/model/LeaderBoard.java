@@ -1,5 +1,6 @@
 package model;
 
+import utils.PathManager;
 import java.io.*;
 import java.util.*;
 
@@ -10,8 +11,8 @@ import java.util.*;
  */
 public class LeaderBoard {
 
-    /** 排行榜文件路径（项目根目录下的 leaderboard.dat） */
-    public static final String FILE_NAME = System.getProperty("user.dir") + File.separator + "leaderboard.dat";
+    /** 排行榜文件 — 存储在 ~/.lianliankan/leaderboard.dat */
+    public static final File FILE_NAME = PathManager.getLeaderboardFile();
     /** 每模式取前几名（仅 topRecords 用） */
     public static final int TOP_N = 5;
 
@@ -83,9 +84,8 @@ public class LeaderBoard {
 
     /** 从 leaderboard.dat 加载所有记录 */
     public void loadFromFile() {
-        File file = new File(FILE_NAME);
-        if (!file.exists()) return;
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+        if (!FILE_NAME.exists()) return;
+        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 LeaderRecord record = LeaderRecord.fromLine(line.trim());
@@ -100,7 +100,7 @@ public class LeaderBoard {
 
     /** 将所有记录写回 leaderboard.dat（全量覆盖） */
     public void saveToFile() {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME.getAbsolutePath()))) {
             for (LeaderRecord r : records) {
                 writer.write(r.toLine());
                 writer.newLine();

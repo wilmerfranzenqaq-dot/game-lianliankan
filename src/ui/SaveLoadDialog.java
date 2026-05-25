@@ -251,12 +251,12 @@ public class SaveLoadDialog extends JDialog {
                 "读取存档 " + slot + " ？\n当前进度将会丢失。",
                 "确认读取", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (r != JOptionPane.YES_OPTION) return;
-        boolean success = gamePanel.loadGame(slot);
-        if (success) {
+        String error = gamePanel.loadGame(slot);
+        if (error == null) {
             JOptionPane.showMessageDialog(this, "读取成功！");
             dispose();
         } else {
-            JOptionPane.showMessageDialog(this, "读取失败！", "错误", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, error, "读取失败", JOptionPane.WARNING_MESSAGE);
         }
     }
 

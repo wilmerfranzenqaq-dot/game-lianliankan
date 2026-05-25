@@ -23,8 +23,7 @@ import java.util.List;
  */
 public class SaveManager {
     public static String getSaveFilePath(String username, String mode, int slot) {
-        String modeStr = mode.equals("困难模式") ? "hard" : "easy";
-        return "save_" + username + "_" + modeStr + "_" + slot + ".dat";
+        return PathManager.getSaveFile(username, mode, slot).getAbsolutePath();
     }
 
     public static boolean saveGame(String filepath, String username, String catName, String mode, int slot,

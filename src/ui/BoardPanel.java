@@ -4,6 +4,7 @@ import effects.EffectManager;
 import model.*;
 import model.Rectangle;
 import utils.MusicManager;
+import utils.PathManager;
 import utils.Utils;
 
 import javax.swing.*;
@@ -11,7 +12,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -52,7 +53,7 @@ public class BoardPanel extends JPanel {
 
     // ── 图片资源 ──
     List<Image> imageList = new ArrayList<>();
-    private String skinDir = "resource";
+    private String skinDir = PathManager.SKIN_DEFAULT;
     Image[] scaledImages;
 
     // ── 游戏状态 ──
@@ -438,22 +439,26 @@ public class BoardPanel extends JPanel {
     }
 
     // ════════════════════════════════════════════════════
+    /**
+     * 加载皮肤图片并预缩放到格子大小
+     *
+     * 索引加载策略：从 0 开始递增，通过 PathManager 依次加载 {i}.png，
+     * 直到找不到下一个文件为止。相比 File.listFiles()，不依赖文件系统排序，
+     * 跨平台表现一致。
+     */
     private void loadImages() {
-        File dir = new File(skinDir);
-        if (!dir.exists()) {
-            dir = new File("D:" + File.separator + "game-lianliankan" + File.separator + skinDir);
-        }
+        String prefix = PathManager.getSkinClasspathPrefix(skinDir);
+        String filePrefix = "resource/" + (prefix.isEmpty() ? "" : prefix);
+
         imageList.clear();
-        File[] files = dir.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                String fname = file.getName();
-                if (fname.endsWith(".png")) {
-                    ImageIcon icon = new ImageIcon(file.getPath());
-                    imageList.add(icon.getImage());
-                }
-            }
+        for (int i = 0; ; i++) {
+            String name = prefix + i + ".png";
+            String fileName = filePrefix + i + ".png";
+            URL url = PathManager.getResourceUrl(name, fileName);
+            if (url == null) break;
+            imageList.add(new ImageIcon(url).getImage());
         }
+
         // 预缩放到格子大小
         scaledImages = new Image[imageList.size()];
         for (int i = 0; i < imageList.size(); i++) {
