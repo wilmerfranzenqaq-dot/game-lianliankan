@@ -108,19 +108,8 @@ public class BoardPanel extends JPanel {
         this.cellWidth = this.width / totalCol;
         this.cellHeight = this.height / totalRow;
 
-        // ── 加载棋子图片资源 ──
+        // ── 加载棋子图片资源（含预缩放）
         loadImages();
-
-        // 预缩放到格子大小        // 预缩放到格子大小（同步缩放，消除每帧缩放开销 + 懒加载空白 bug）
-        scaledImages = new Image[imageList.size()];
-        for (int i = 0; i < imageList.size(); i++) {
-            BufferedImage bi = new BufferedImage(cellWidth, cellHeight, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2d = bi.createGraphics();
-            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-            g2d.drawImage(imageList.get(i), 0, 0, cellWidth, cellHeight, null);
-            g2d.dispose();
-            scaledImages[i] = bi;
-        }
 
         // ── 鼠标点击监听 ──
         addMouseListener(new MouseAdapter() {
