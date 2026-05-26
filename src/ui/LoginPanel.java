@@ -25,111 +25,163 @@ public class LoginPanel extends JPanel {
 
     // ── UI 组件 ──
     private JTextField accountField;
-    private JTextField passwordField;
+    private JPasswordField passwordField;
     private JTextField catNameField;
     private GameFrame parent;
 
     public LoginPanel(GameFrame parent) {
         this.parent = parent;
-        setLayout(null);
+        setLayout(new GridBagLayout());
         setBackground(new Color(0xf4f0e8));
-        setSize(parent.getWidth(), parent.getHeight());
 
-        // ── 账号输入框 ──
+        Font labelFont = new Font("Microsoft YaHei", Font.PLAIN, 16);
+        Color labelColor = new Color(0x5a4a3a);
+        Color placeholderColor = new Color(0x9a9080);
+        Color textColor = new Color(0x3a3530);
+        Color fieldBg = new Color(0xfcf9f2);
+        Color fieldBorder = new Color(0xe8ddd0);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // ── 标题 ──
+        JLabel titleLabel = new JLabel("哈基米连连看", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 32));
+        titleLabel.setForeground(labelColor);
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
+        gbc.insets = new Insets(20, 10, 10, 10);
+        add(titleLabel, gbc);
+
+        gbc.insets = new Insets(30, 10, 6, 10);
+        gbc.gridwidth = 1;
+        gbc.gridy = 1;
+
+        // ── 账号 ──
+        JLabel accountLabel = new JLabel("账号：");
+        accountLabel.setFont(labelFont);
+        accountLabel.setForeground(labelColor);
+        gbc.gridx = 0; gbc.gridy = 2;
+        gbc.anchor = GridBagConstraints.EAST;
+        add(accountLabel, gbc);
+
         accountField = new JTextField();
         accountField.setText("请输入账号");
+        accountField.setForeground(placeholderColor);
+        accountField.setOpaque(true);
+        accountField.setBackground(fieldBg);
+        accountField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(fieldBorder),
+            BorderFactory.createEmptyBorder(0, 8, 0, 8)
+        ));
+        accountField.setPreferredSize(new Dimension(240, 32));
         accountField.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent e) {
                 if (accountField.getText().equals("请输入账号")) {
                     accountField.setText("");
-                    accountField.setForeground(new Color(0x3a3530));
+                    accountField.setForeground(textColor);
                 }
             }
             public void focusLost(java.awt.event.FocusEvent e) {
                 if (accountField.getText().isEmpty()) {
                     accountField.setText("请输入账号");
-                    accountField.setForeground(new Color(0x9a9080));
+                    accountField.setForeground(placeholderColor);
                 }
             }
         });
-        accountField.setSize(170, 32);
-        accountField.setLocation(110, 100);
-        accountField.setForeground(new Color(0x9a9080));
-        accountField.setOpaque(true);
-        accountField.setBackground(new Color(0xfcf9f2));
-        accountField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0xe8ddd0)),
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.WEST;
+        add(accountField, gbc);
+
+        // ── 密码 ──
+        JLabel passwordLabel = new JLabel("密码：");
+        passwordLabel.setFont(labelFont);
+        passwordLabel.setForeground(labelColor);
+        gbc.gridx = 0; gbc.gridy = 3;
+        gbc.anchor = GridBagConstraints.EAST;
+        add(passwordLabel, gbc);
+
+        passwordField = new JPasswordField();
+        passwordField.setText("请输入密码");
+        passwordField.setEchoChar((char) 0);
+        passwordField.setForeground(placeholderColor);
+        passwordField.setOpaque(true);
+        passwordField.setBackground(fieldBg);
+        passwordField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(fieldBorder),
             BorderFactory.createEmptyBorder(0, 8, 0, 8)
         ));
-        add(accountField);
-
-        // ── 密码输入框 ──
-        passwordField = new JTextField();
-        passwordField.setText("请输入密码");
+        passwordField.setPreferredSize(new Dimension(240, 32));
         passwordField.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent e) {
-                if (passwordField.getText().equals("请输入密码")) {
+                String current = new String(passwordField.getPassword());
+                if (current.equals("请输入密码")) {
                     passwordField.setText("");
-                    passwordField.setForeground(new Color(0x3a3530));
+                    passwordField.setEchoChar('●');
+                    passwordField.setForeground(textColor);
                 }
             }
             public void focusLost(java.awt.event.FocusEvent e) {
-                if (passwordField.getText().isEmpty()) {
+                String current = new String(passwordField.getPassword());
+                if (current.isEmpty()) {
+                    passwordField.setEchoChar((char) 0);
                     passwordField.setText("请输入密码");
-                    passwordField.setForeground(new Color(0x9a9080));
+                    passwordField.setForeground(placeholderColor);
                 }
             }
         });
-        passwordField.setSize(170, 32);
-        passwordField.setLocation(110, 140);
-        passwordField.setForeground(new Color(0x9a9080));
-        passwordField.setOpaque(true);
-        passwordField.setBackground(new Color(0xfcf9f2));
-        passwordField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0xe8ddd0)),
-            BorderFactory.createEmptyBorder(0, 8, 0, 8)
-        ));
-        add(passwordField);
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.WEST;
+        add(passwordField, gbc);
 
-        // ── 小猫名字输入框 ──
+        // ── 小猫名字 ──
+        JLabel catLabel = new JLabel("小猫名字：");
+        catLabel.setFont(labelFont);
+        catLabel.setForeground(labelColor);
+        gbc.gridx = 0; gbc.gridy = 4;
+        gbc.anchor = GridBagConstraints.EAST;
+        add(catLabel, gbc);
+
         catNameField = new JTextField();
         catNameField.setText("给小猫取个名字");
-        catNameField.setForeground(new Color(0x9a9080));
+        catNameField.setForeground(placeholderColor);
+        catNameField.setOpaque(true);
+        catNameField.setBackground(fieldBg);
+        catNameField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(fieldBorder),
+            BorderFactory.createEmptyBorder(0, 8, 0, 8)
+        ));
+        catNameField.setPreferredSize(new Dimension(240, 32));
         catNameField.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent e) {
                 if (catNameField.getText().equals("给小猫取个名字")) {
                     catNameField.setText("");
-                    catNameField.setForeground(new Color(0x3a3530));
+                    catNameField.setForeground(textColor);
                 }
             }
             public void focusLost(java.awt.event.FocusEvent e) {
                 if (catNameField.getText().isEmpty()) {
                     catNameField.setText("给小猫取个名字");
-                    catNameField.setForeground(new Color(0x9a9080));
+                    catNameField.setForeground(placeholderColor);
                 }
             }
         });
-        catNameField.setSize(170, 32);
-        catNameField.setLocation(110, 180);
-        catNameField.setOpaque(true);
-        catNameField.setBackground(new Color(0xfcf9f2));
-        catNameField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0xe8ddd0)),
-            BorderFactory.createEmptyBorder(0, 8, 0, 8)
-        ));
-        add(catNameField);
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.WEST;
+        add(catNameField, gbc);
 
-        // ── 登录按钮 ──
+        // ── 按钮 ──
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
+        buttonPanel.setOpaque(false);
+
         RoundedButton loginBtn = new RoundedButton("登录", 0xd4a04a);
         loginBtn.setForeground(Color.WHITE);
-        loginBtn.setBounds(60, 225, 80, 32);
-        add(loginBtn);
+        loginBtn.setPreferredSize(new Dimension(100, 36));
+        buttonPanel.add(loginBtn);
 
         loginBtn.addActionListener(e -> {
             String username = accountField.getText();
-            String password = passwordField.getText();
+            String password = new String(passwordField.getPassword());
             if (validateUser(username, password)) {
-                // 登录成功 → 弹出难度选择对话框 → 进入游戏
                 String[] options = {"简单模式", "困难模式"};
                 int choice = JOptionPane.showOptionDialog(this,
                         "选择游戏难度", "连连看",
@@ -147,15 +199,14 @@ public class LoginPanel extends JPanel {
             }
         });
 
-        // ── 注册按钮 ──
         RoundedButton registerBtn = new RoundedButton("注册", 0x8a7a65);
         registerBtn.setForeground(Color.WHITE);
-        registerBtn.setBounds(140, 225, 80, 32);
-        add(registerBtn);
+        registerBtn.setPreferredSize(new Dimension(100, 36));
+        buttonPanel.add(registerBtn);
 
         registerBtn.addActionListener(e -> {
             String username = accountField.getText();
-            String password = passwordField.getText();
+            String password = new String(passwordField.getPassword());
             if (username.equals("请输入账号") || username.trim().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "请输入账号！");
                 return;
@@ -172,7 +223,6 @@ public class LoginPanel extends JPanel {
             if (catName.equals("给小猫取个名字") || catName.trim().isEmpty()) {
                 catName = "Mimi";
             }
-            // 检测猫名是否已被其他用户使用（排除自己——注册时自己是新用户，不存在）
             if (isCatNameUsedByOthers(catName, "")) {
                 JOptionPane.showMessageDialog(this, "已经有小哈基米叫这个名字了！");
                 return;
@@ -180,7 +230,10 @@ public class LoginPanel extends JPanel {
             if (writeUserToFile(username, password, catName)) {
                 JOptionPane.showMessageDialog(this, "注册成功！");
                 accountField.setText("请输入账号");
+                accountField.setForeground(placeholderColor);
+                passwordField.setEchoChar((char) 0);
                 passwordField.setText("请输入密码");
+                passwordField.setForeground(placeholderColor);
             } else {
                 JOptionPane.showMessageDialog(this, "注册失败！");
             }
@@ -188,8 +241,8 @@ public class LoginPanel extends JPanel {
 
         RoundedButton guestBtn = new RoundedButton("游客模式", 0x9a7a5a);
         guestBtn.setForeground(Color.WHITE);
-        guestBtn.setBounds(220, 225, 120, 32);
-        add(guestBtn);
+        guestBtn.setPreferredSize(new Dimension(130, 36));
+        buttonPanel.add(guestBtn);
 
         guestBtn.addActionListener(e -> {
             String[] options = {"简单模式", "困难模式"};
@@ -202,14 +255,10 @@ public class LoginPanel extends JPanel {
             parent.startGame(null, "Mimi", isHardMode);
         });
 
-        // ── 背景图片 ──
-        ImageIcon bgIcon = PathManager.getResourceImageIcon("background.png", "resource/background.png");
-        if (bgIcon != null) {
-            JLabel bgLabel = new JLabel(bgIcon);
-            bgLabel.setSize(400, 300);
-            bgLabel.setLocation(-10, -6);
-            add(bgLabel);
-        }
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(20, 10, 10, 10);
+        add(buttonPanel, gbc);
     }
 
     // ── 用户数据管理（静态方法，读写 user.txt） ──

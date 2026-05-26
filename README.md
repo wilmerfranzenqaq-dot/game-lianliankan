@@ -6,13 +6,28 @@
 
 ## 快速开始
 
+### 使用 Maven（推荐）
+
 ```bash
-cd D:\game-lianliankan
-javac -d out -sourcepath src src\app\Main.java
-java -cp out app.Main
+# 编译 + 运行
+mvn compile exec:java -Dexec.mainClass="app.Main"
+
+# 打包为可执行 JAR（包含所有资源文件）
+mvn package
+java -jar target/game-lianliankan-1.0.jar
+
+# 分发：只需把 target/game-lianliankan-1.0.jar 发给别人即可
 ```
 
-依赖：JDK 8+（推荐 JDK 17+）
+依赖：JDK 17+、Maven 3.6+
+
+### 手动编译（无 Maven）
+
+```bash
+javac -d out -sourcepath src src/app/Main.java
+# 必须将 resource 目录复制到 classpath 上，否则音效和图片都加载不了
+java -cp "out;resource" app.Main
+```
 
 ---
 

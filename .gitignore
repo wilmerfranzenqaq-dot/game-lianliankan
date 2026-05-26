@@ -1,15 +1,20 @@
-# 编译输出
+# Maven 构建输出
+target/
 out/
-*.class
 
 # IDE 配置
-*.iml
 .idea/
 *.iml
+
+# Claude Code 本地配置
+.claude/
+
+# 用户数据 / 存档 / 排行榜（本地产生，不上传）
+user.txt
+*.dat
+save/
 
 # 其他
 *.log
 .DS_Store
-
-# 存档文件
-*.dat
+答辩介绍.md
