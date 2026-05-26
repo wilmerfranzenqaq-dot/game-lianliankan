@@ -1,13 +1,15 @@
-# Maven 构建输出
-target/
-out/
-
-# IDE 配置
-.idea/
-*.iml
+# IDE 用户本地配置（仅忽略个人工作区）
+.idea/workspace.xml
+.idea/usage.statistics.xml
+.idea/shelf/
+.idea/tasks.xml
 
 # Claude Code 本地配置
 .claude/
+
+# 构建输出
+target/
+out/
 
 # 用户数据 / 存档 / 排行榜（本地产生，不上传）
 user.txt
